@@ -13,11 +13,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Restore game project
+      - name: Verify project
         shell: bash
         run: |
-          base64 -d gampiyasa-source.b64 > gampiyasa-source.zip
-          unzip -o gampiyasa-source.zip
+          godot --version
           test -f project.godot
           test -f scripts/main.gd
 
