@@ -309,7 +309,7 @@ func start_cutscene() -> void:
 func _process(delta: float) -> void:
 	clock += delta
 	if state == GameState.DRIVE:
-		var t := clamp(clock/9.0,0.0,1.0)
+		var t: float = clampf(clock / 9.0, 0.0, 1.0)
 		car.position = drive_a.lerp(drive_b,smoothstep(0,1,t))
 		cine_cam.global_position = car.global_position + Vector3(8,4.5,-9)
 		cine_cam.look_at(car.global_position+Vector3(0,0.8,2),Vector3.UP)
