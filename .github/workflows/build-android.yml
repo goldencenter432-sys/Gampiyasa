@@ -17,39 +17,9 @@ jobs:
         shell: bash
         run: |
           base64 -d gampiyasa-source.b64 > gampiyasa-source.zip
-          python3 - <<'PY'
-          import zipfile
-          with zipfile.ZipFile("gampiyasa-source.zip") as z:
-              z.extractall(".")
-          PY
-
-      - name: Generate prototype audio
-        shell: bash
-        run: |
-          mkdir -p audio
-          python3 - <<'PY'
-          import math, random, wave, struct
-          RATE=22050
-          def wav(path, seconds, fn, volume=.25):
-              n=int(RATE*seconds)
-              with wave.open(path,'w') as w:
-                  w.setnchannels(1); w.setsampwidth(2); w.setframerate(RATE)
-                  frames=[]
-                  for i in range(n):
-                      t=i/RATE
-                      s=max(-1,min(1,fn(t,i)))*volume
-                      frames.append(struct.pack('<h',int(s*32767)))
-                  w.writeframes(b''.join(frames))
-          wav('audio/car_engine.wav',2.0,lambda t,i: math.sin(2*math.pi*95*t)+.35*math.sin(2*math.pi*190*t),.18)
-          wav('audio/footstep.wav',.22,lambda t,i: (random.random()*2-1)*math.exp(-18*t),.38)
-          def birds(t,i):
-              phase=t%1.4
-              chirp=0.0
-              if phase<.18:
-                  chirp=math.sin(2*math.pi*(1500+1000*phase/.18)*t)*math.exp(-10*phase)
-              return (random.random()*2-1)*.05+chirp
-          wav('audio/village_birds.wav',4.2,birds,.22)
-          PY
+          unzip -o gampiyasa-source.zip
+          test -f project.godot
+          test -f scripts/main.gd
 
       - name: Import project
         shell: bash
@@ -61,6 +31,7 @@ jobs:
           mkdir -p build/android
           godot --headless --verbose --path . --export-debug "Android" "build/android/GamPiyasaPrototype.apk"
           test -s build/android/GamPiyasaPrototype.apk
+          ls -lh build/android/GamPiyasaPrototype.apk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
