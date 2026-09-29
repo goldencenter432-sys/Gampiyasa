@@ -13,12 +13,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Verify project
+      - name: Prepare Godot Android environment
         shell: bash
         run: |
+          set -e
+          mkdir -p "$HOME/.local/share/godot/export_templates" "$HOME/.config/godot"
+          if [ -d /root/.local/share/godot/export_templates ]; then
+            cp -a /root/.local/share/godot/export_templates/. "$HOME/.local/share/godot/export_templates/"
+          fi
+          if [ -d /root/.config/godot ]; then
+            cp -a /root/.config/godot/. "$HOME/.config/godot/"
+          fi
+          echo "HOME=$HOME"
           godot --version
-          test -f project.godot
-          test -f scripts/main.gd
+          command -v java || true
+          find "$HOME/.local/share/godot/export_templates" -maxdepth 2 -type f -name 'android_debug.apk' -print || true
 
       - name: Import project
         shell: bash
