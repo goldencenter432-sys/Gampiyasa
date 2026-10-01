@@ -127,28 +127,28 @@ func build_world() -> void:
 	e.background_mode = Environment.BG_SKY
 	var sky := Sky.new()
 	var sm := ProceduralSkyMaterial.new()
-	sm.sky_top_color = Color("3f83c8")
-	sm.sky_horizon_color = Color("d5edf7")
+	sm.sky_top_color = Color("4b79a8")
+	sm.sky_horizon_color = Color("f6c99b")
 	sm.ground_bottom_color = Color("496844")
-	sm.ground_horizon_color = Color("b8c895")
+	sm.ground_horizon_color = Color("c7aa79")
 	sm.sun_angle_max = 18.0
 	sky.sky_material = sm
 	e.sky = sky
 	e.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-	e.ambient_light_energy = 0.95
+	e.ambient_light_energy = 0.86
 	e.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	e.fog_enabled = true
 	e.fog_density = 0.0022
-	e.fog_light_color = Color("d8e9ed")
-	e.fog_light_energy = 0.65
+	e.fog_light_color = Color("f2c9a1")
+	e.fog_light_energy = 0.78
 	we.environment = e
 	add_child(we)
 	var sun := DirectionalLight3D.new()
-	sun.rotation_degrees = Vector3(-52,-32,0)
-	sun.light_color = Color("fff2d1")
-	sun.light_energy = 1.18
+	sun.rotation_degrees = Vector3(-24,-18,0)
+	sun.light_color = Color("ffd7a0")
+	sun.light_energy = 1.08
 	sun.shadow_enabled = true
-	sun.directional_shadow_max_distance = 70.0
+	sun.directional_shadow_max_distance = 95.0
 	add_child(sun)
 
 func build_village() -> void:
@@ -265,19 +265,29 @@ func animate_walk_pose(n: Node3D, phase: float, amount: float, child_model: bool
 			arm_l.rotation_degrees.x = swing
 			arm_r.rotation_degrees.x = -swing
 
+func animate_grandma_welcome(amount: float) -> void:
+	if grandma == null or grandma.get_child_count() < 7:
+		return
+	var arm_r: Node3D = grandma.get_child(6) as Node3D
+	arm_r.rotation_degrees.z = lerpf(0.0,-38.0,amount)
+	arm_r.rotation_degrees.x = sin(amount*PI)*18.0
+
 func update_third_person_camera() -> void:
-	var origin: Vector3 = pivot.global_position + Vector3(0.0,0.35,0.0)
-	var desired_local: Vector3 = Vector3(0.55,1.45,3.85)
+	var inside_house: bool = player.global_position.z > 22.0
+	var desired_local: Vector3 = Vector3(0.48,1.35,2.35) if inside_house else Vector3(0.55,1.45,3.85)
+	var origin: Vector3 = pivot.global_position + Vector3(0.0,0.45,0.0)
 	var desired_global: Vector3 = pivot.to_global(desired_local)
 	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(origin, desired_global)
 	query.exclude = [player.get_rid()]
+	query.collide_with_areas = false
 	var hit: Dictionary = get_world_3d().direct_space_state.intersect_ray(query)
+	var target_global: Vector3 = desired_global
 	if hit.has("position"):
 		var hit_pos: Vector3 = hit["position"]
-		var back_dir: Vector3 = (origin - hit_pos).normalized()
-		play_cam.global_position = hit_pos + back_dir * 0.28
-	else:
-		play_cam.position = play_cam.position.lerp(desired_local,0.18)
+		var safe_dir: Vector3 = (origin - hit_pos).normalized()
+		target_global = hit_pos + safe_dir * 0.38
+	play_cam.global_position = play_cam.global_position.lerp(target_global,0.24)
+	play_cam.fov = lerpf(play_cam.fov,66.0 if inside_house else 70.0,0.12)
 
 func build_grandma(p: Vector3) -> Node3D:
 	var n: Node3D = Node3D.new()
@@ -421,7 +431,7 @@ func build_ui() -> void:
 	objective.size = Vector2(585,36)
 	objective.add_theme_font_size_override("font_size",21)
 	objective.add_theme_color_override("font_color",Color("fff4df"))
-	objective.text = "ගමට යන ගමන්...  •  v0.2.5.2"
+	objective.text = "ගමට යන ගමන්...  •  v0.2.5.3"
 	layer.add_child(objective)
 
 	dialogue_panel = ColorRect.new()
@@ -521,22 +531,22 @@ func _process(delta: float) -> void:
 		if t < 0.25:
 			cine_stage = 0
 			var shot_t: float = t / 0.25
-			cine_cam.global_position = car.global_position + Vector3(5.4, 2.0, -7.8 + shot_t * 1.6)
+			cine_cam.global_position = car.global_position + Vector3(6.8, 3.2, -6.5 + shot_t * 1.2)
 			cine_cam.look_at(car.global_position + Vector3(0, 0.9, 2.2), Vector3.UP)
 		elif t < 0.50:
 			cine_stage = 1
 			var field_t: float = (t - 0.25) / 0.25
-			cine_cam.global_position = car.global_position + Vector3(-11.0 + field_t * 2.0, 7.8, -2.5)
+			cine_cam.global_position = car.global_position + Vector3(-13.0 + field_t * 2.4, 8.8, -1.0)
 			cine_cam.look_at(car.global_position + Vector3(0, 0.7, 5.0), Vector3.UP)
 		elif t < 0.74:
 			cine_stage = 2
 			var canal_t: float = (t - 0.50) / 0.24
-			cine_cam.global_position = car.global_position + Vector3(-7.5, 2.8 + canal_t * 1.2, -4.0)
+			cine_cam.global_position = car.global_position + Vector3(-9.2, 4.0 + canal_t * 0.8, -2.8)
 			cine_cam.look_at(car.global_position + Vector3(0, 0.8, 3.0), Vector3.UP)
 		else:
 			cine_stage = 3
 			var arrival_t: float = (t - 0.74) / 0.26
-			cine_cam.global_position = Vector3(8.5 - arrival_t * 3.0, 4.2 + arrival_t * 0.5, 1.0 + arrival_t * 8.0)
+			cine_cam.global_position = Vector3(12.5 - arrival_t * 2.0, 5.4 + arrival_t * 0.4, 2.0 + arrival_t * 6.0)
 			cine_cam.look_at(car.global_position + Vector3(0, 0.9, 1.0), Vector3.UP)
 
 		if t >= 1.0:
@@ -579,22 +589,25 @@ func _process(delta: float) -> void:
 				father.visible = true
 				var ft: float = clampf((exit_t-0.08)/0.30,0.0,1.0)
 				father.global_position = parked + Vector3(-1.2,0.10 + sin(ft*PI)*0.10,-0.9).lerp(Vector3(-2.5,0.0,-0.7),smoothstep(0.0,1.0,ft))
+				father.rotation_degrees.y = lerpf(90.0,12.0,smoothstep(0.0,1.0,ft))
 				animate_walk_pose(father,ft*TAU*1.3,1.0,false)
 			if exit_t > 0.20:
 				mother.visible = true
 				var mt: float = clampf((exit_t-0.20)/0.30,0.0,1.0)
 				mother.global_position = parked + Vector3(1.2,0.10 + sin(mt*PI)*0.10,-0.8).lerp(Vector3(2.5,0.0,-0.5),smoothstep(0.0,1.0,mt))
+				mother.rotation_degrees.y = lerpf(-90.0,-8.0,smoothstep(0.0,1.0,mt))
 				animate_walk_pose(mother,mt*TAU*1.3,0.9,false)
 			if exit_t > 0.36:
 				daughter.visible = true
 				var dt: float = clampf((exit_t-0.36)/0.28,0.0,1.0)
 				daughter.global_position = parked + Vector3(1.2,0.08 + sin(dt*PI)*0.08,0.9).lerp(Vector3(2.8,0.0,1.2),smoothstep(0.0,1.0,dt))
+				daughter.rotation_degrees.y = lerpf(-80.0,-12.0,smoothstep(0.0,1.0,dt))
 				animate_walk_pose(daughter,dt*TAU*1.35,0.85,false)
 			if exit_t > 0.50:
 				cutscene_boy.visible = true
 				var bt: float = clampf((exit_t-0.50)/0.26,0.0,1.0)
 				cutscene_boy.global_position = parked + Vector3(-1.2,0.08 + sin(bt*PI)*0.08,0.9).lerp(Vector3(-2.6,0.0,1.4),smoothstep(0.0,1.0,bt))
-				cutscene_boy.rotation_degrees.y = lerpf(0.0,-18.0,bt)
+				cutscene_boy.rotation_degrees.y = lerpf(82.0,-18.0,smoothstep(0.0,1.0,bt))
 				animate_walk_pose(cutscene_boy,bt*TAU*1.45,1.0,true)
 
 		# 8.5-13 sec: grandma walks from inside to the veranda.
@@ -610,6 +623,7 @@ func _process(delta: float) -> void:
 			grandma.position.y = sin(walk_t*PI*4.0)*0.035
 			grandma.rotation_degrees.y = lerpf(180.0,0.0,walk_t)
 			grandma.rotation_degrees.z = sin(walk_t*TAU*2.0)*1.2
+			animate_grandma_welcome(0.0)
 			cine_cam.global_position = Vector3(-10.5,3.8,15.4)
 			cine_cam.look_at(grandma.global_position + Vector3(0,1.4,0),Vector3.UP)
 
@@ -620,7 +634,8 @@ func _process(delta: float) -> void:
 			if front_door_right != null:
 				front_door_right.rotation_degrees.y = 42.0
 			grandma.position = Vector3(-2.2,0.0,20.7)
-			cine_cam.global_position = Vector3(9.5,4.6,13.2)
+			animate_grandma_welcome(clampf((clock-12.3)/2.7,0.0,1.0))
+			cine_cam.global_position = Vector3(9.8,4.8,12.6)
 			cine_cam.look_at(Vector3(-0.5,1.5,20.0),Vector3.UP)
 
 		if clock > 15.0:
@@ -630,7 +645,8 @@ func _process(delta: float) -> void:
 			dialogue.visible = true
 			dialogue.text = "ආච්චි: ආ මේ ළමයිනේ! එන්න ඇතුළට. ගොඩ කාලෙකින් ඔයාලව දැක්කෙ."
 	elif state == GameState.DIALOGUE:
-		cine_cam.global_position = Vector3(8.8,3.6,14.6)
+		animate_grandma_welcome(0.75)
+		cine_cam.global_position = Vector3(9.0,3.8,14.0)
 		cine_cam.look_at(grandma.global_position + Vector3(0,1.3,0),Vector3.UP)
 		if clock > 4.0 and clock <= 7.5:
 			dialogue.text = "අම්මා: අම්මේ... කොහොමද ඉතින්?"
