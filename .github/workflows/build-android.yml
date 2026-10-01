@@ -3,7 +3,7 @@ name: Build Android APK
 on:
   workflow_dispatch:
   push:
-    branches: [ main, v0.2.1-environment-walawwa, v0.2.2-visual-grandma, v0.2.3-cinematic-walawwa, v0.2.4-interior-map-cutscene, v0.2.5-family-cinematic ]
+    branches: [ main, v0.2.1-environment-walawwa, v0.2.2-visual-grandma, v0.2.3-cinematic-walawwa, v0.2.4-interior-map-cutscene, v0.2.5-family-cinematic, v0.2.5.1-polish ]
 
 jobs:
   android-debug:
