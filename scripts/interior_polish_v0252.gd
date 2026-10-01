@@ -10,9 +10,11 @@ var cloth := Color("9d765a")
 var ceramic := Color("d8d0bf")
 
 func _ready() -> void:
-	name = "InteriorPolish_v0_2_5_2"
+	name = "InteriorPolish_v0_2_5_3"
 	_build_veranda_details()
+	_build_exterior_wall_details()
 	_build_hall_details()
+	_build_photo_details()
 	_build_kitchen_details()
 	_build_bedroom_details()
 
@@ -87,6 +89,10 @@ func _build_kitchen_details() -> void:
 	for i: int in range(3):
 		var z: float = 34.8+float(i)*0.62
 		_cylinder(self,Vector3(-4.25,1.72,z),0.30,0.34,Color("4e4c48"))
+	# Clear prep area and a small produce basket.
+	_box(self,Vector3(-5.7,1.80,35.55),Vector3(1.55,0.07,0.75),Color("9a754f"))
+	for j: int in range(3):
+		_sphere(self,Vector3(-6.2+float(j)*0.45,1.98,35.55),0.14,Color("b86b3f"))
 	# Hanging utensil rail.
 	_box(self,Vector3(-5.8,2.85,36.55),Vector3(3.9,0.09,0.09),dark_wood)
 	for i: int in range(5):
@@ -100,3 +106,25 @@ func _build_bedroom_details() -> void:
 	_box(self,Vector3(3.35,0.90,32.45),Vector3(0.9,0.14,0.75),wood)
 	_cylinder(self,Vector3(3.35,1.35,32.45),0.06,0.65,brass)
 	_sphere(self,Vector3(3.35,1.73,32.45),0.18,Color("e2bd73"))
+
+func _build_exterior_wall_details() -> void:
+	# Break up the flat side walls with timber trim and simple windows.
+	for side_x: float in [-6.9,6.9]:
+		for z: float in [26.0,30.0,34.0]:
+			_box(self,Vector3(side_x,2.25,z),Vector3(0.10,1.9,1.6),Color("5c4434"))
+			_box(self,Vector3(side_x*1.002,2.25,z),Vector3(0.08,1.45,1.18),Color("6f8790"))
+			_box(self,Vector3(side_x*1.004,2.25,z),Vector3(0.12,0.10,1.28),dark_wood)
+			_box(self,Vector3(side_x*1.004,2.25,z),Vector3(0.12,1.55,0.10),dark_wood)
+
+func _build_photo_details() -> void:
+	# Layer simple portrait silhouettes over the v0.2.4 photo panels so they read as family photos.
+	var xs: Array[float] = [-6.4,-4.6,-2.8,2.8,4.6,6.4]
+	for i: int in range(xs.size()):
+		var x: float = xs[i]
+		var skin: Color = Color("b98d72") if i%2==0 else Color("9f775f")
+		var shirt: Color = Color("6f7f8d") if i%3==0 else Color("8b6f76")
+		_sphere(self,Vector3(x,2.93,30.20),0.18,skin)
+		_box(self,Vector3(x,2.53,30.20),Vector3(0.46,0.48,0.06),shirt)
+	# Larger ancestral portrait silhouette.
+	_sphere(self,Vector3(-0.20,3.07,36.73),0.23,Color("a67d64"))
+	_box(self,Vector3(-0.20,2.55,36.73),Vector3(0.60,0.62,0.07),Color("66574f"))
