@@ -251,9 +251,11 @@ func _build_walawwa() -> void:
 	_box(h, Vector3(2.35, 2.5, 22.52), Vector3(0.34, 4.15, 0.34), wood_dark, false)
 	_box(h, Vector3(0, 4.48, 22.52), Vector3(5.05, 0.34, 0.34), wood_dark, false)
 	var door_l: MeshInstance3D = _box(h, Vector3(-2.72, 2.32, 23.05), Vector3(2.08, 3.72, 0.22), wood_mid, false)
-	door_l.rotation_degrees.y = -38.0
+	door_l.name = "FrontDoorLeft"
+	door_l.rotation_degrees.y = 0.0
 	var door_r: MeshInstance3D = _box(h, Vector3(2.72, 2.32, 23.05), Vector3(2.08, 3.72, 0.22), wood_mid, false)
-	door_r.rotation_degrees.y = 38.0
+	door_r.name = "FrontDoorRight"
+	door_r.rotation_degrees.y = 0.0
 	for y in [1.25, 2.25, 3.25]:
 		_box(door_l, Vector3(0, y-2.32, -0.13), Vector3(1.45, 0.10, 0.05), Color("4c2d1f"), false)
 		_box(door_r, Vector3(0, y-2.32, -0.13), Vector3(1.45, 0.10, 0.05), Color("4c2d1f"), false)
