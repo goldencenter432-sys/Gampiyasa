@@ -198,7 +198,7 @@ func _build_fences_and_poles() -> void:
 		for i in range(14):
 			var z: float = -34.0 + float(i) * 4.2
 			_cylinder(self, Vector3(x, 0.7, z), 0.09, 1.4, wood_mid, 7)
-		_box(self, Vector3(x, 0.85, z + 2.0), Vector3(0.12, 0.10, 4.0), wood_mid, false)
+			_box(self, Vector3(x, 0.85, z + 2.0), Vector3(0.12, 0.10, 4.0), wood_mid, false)
 	# Power poles and crossbars.
 	for i in range(6):
 		var z: float = -31.0 + float(i) * 11.0
