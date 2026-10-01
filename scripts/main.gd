@@ -30,7 +30,9 @@ var play_cam: Camera3D
 var cine_cam: Camera3D
 var controls: Control
 var dialogue: Label
+var dialogue_panel: ColorRect
 var objective: Label
+var objective_panel: ColorRect
 var jump_btn: Button
 var interact_btn: Button
 var skip_btn: Button
@@ -205,6 +207,8 @@ func person(parent: Node, p: Vector3, cloth: Color, scale_v := 1.0) -> Node3D:
 	sphere(n,Vector3(0,2.1,0),0.34,Color("d3a07d"))
 	cylinder(n,Vector3(-0.16,0.35,0),0.1,0.7,Color("383635"))
 	cylinder(n,Vector3(0.16,0.35,0),0.1,0.7,Color("383635"))
+	cylinder(n,Vector3(-0.48,1.18,0),0.09,0.82,Color("d3a07d"))
+	cylinder(n,Vector3(0.48,1.18,0),0.09,0.82,Color("d3a07d"))
 	return n
 
 func build_child(parent: Node, p: Vector3, shirt: Color, scale_v: float = 1.0) -> Node3D:
@@ -229,6 +233,43 @@ func build_child(parent: Node, p: Vector3, shirt: Color, scale_v: float = 1.0) -
 	box(n,Vector3(-0.20,-0.09,-0.06),Vector3(0.25,0.14,0.42),Color("2f2f2f"))
 	box(n,Vector3(0.20,-0.09,-0.06),Vector3(0.25,0.14,0.42),Color("2f2f2f"))
 	return n
+
+func animate_walk_pose(n: Node3D, phase: float, amount: float, child_model: bool = false) -> void:
+	var swing: float = sin(phase) * 26.0 * amount
+	if child_model:
+		if n.get_child_count() >= 8:
+			var arm_l: Node3D = n.get_child(3) as Node3D
+			var arm_r: Node3D = n.get_child(4) as Node3D
+			var leg_l: Node3D = n.get_child(6) as Node3D
+			var leg_r: Node3D = n.get_child(7) as Node3D
+			arm_l.rotation_degrees.x = swing
+			arm_r.rotation_degrees.x = -swing
+			leg_l.rotation_degrees.x = -swing * 0.65
+			leg_r.rotation_degrees.x = swing * 0.65
+	else:
+		if n.get_child_count() >= 6:
+			var leg_l: Node3D = n.get_child(2) as Node3D
+			var leg_r: Node3D = n.get_child(3) as Node3D
+			var arm_l: Node3D = n.get_child(4) as Node3D
+			var arm_r: Node3D = n.get_child(5) as Node3D
+			leg_l.rotation_degrees.x = -swing * 0.65
+			leg_r.rotation_degrees.x = swing * 0.65
+			arm_l.rotation_degrees.x = swing
+			arm_r.rotation_degrees.x = -swing
+
+func update_third_person_camera() -> void:
+	var origin: Vector3 = pivot.global_position + Vector3(0.0,0.35,0.0)
+	var desired_local: Vector3 = Vector3(0.55,1.45,3.85)
+	var desired_global: Vector3 = pivot.to_global(desired_local)
+	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(origin, desired_global)
+	query.exclude = [player.get_rid()]
+	var hit: Dictionary = get_world_3d().direct_space_state.intersect_ray(query)
+	if hit.has("position"):
+		var hit_pos: Vector3 = hit["position"]
+		var back_dir: Vector3 = (origin - hit_pos).normalized()
+		play_cam.global_position = hit_pos + back_dir * 0.28
+	else:
+		play_cam.position = play_cam.position.lerp(desired_local,0.18)
 
 func build_grandma(p: Vector3) -> Node3D:
 	var n: Node3D = Node3D.new()
@@ -362,19 +403,38 @@ func build_ui() -> void:
 	controls.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	layer.add_child(controls)
 	controls.set_active(false)
+	objective_panel = ColorRect.new()
+	objective_panel.position = Vector2(18,16)
+	objective_panel.size = Vector2(610,52)
+	objective_panel.color = Color(0.02,0.03,0.04,0.58)
+	layer.add_child(objective_panel)
 	objective = Label.new()
-	objective.position = Vector2(28,26)
-	objective.add_theme_font_size_override("font_size",22)
-	objective.text = "ගමට යන ගමන්...  •  v0.2.5.1"
+	objective.position = Vector2(30,27)
+	objective.size = Vector2(585,36)
+	objective.add_theme_font_size_override("font_size",21)
+	objective.add_theme_color_override("font_color",Color("fff4df"))
+	objective.text = "ගමට යන ගමන්...  •  v0.2.5.2"
 	layer.add_child(objective)
+
+	dialogue_panel = ColorRect.new()
+	dialogue_panel.position = Vector2(115,552)
+	dialogue_panel.size = Vector2(1010,92)
+	dialogue_panel.color = Color(0.02,0.02,0.025,0.72)
+	dialogue_panel.visible = false
+	layer.add_child(dialogue_panel)
 	dialogue = Label.new()
-	dialogue.position = Vector2(100,560)
-	dialogue.size = Vector2(1080,100)
+	dialogue.position = Vector2(145,562)
+	dialogue.size = Vector2(950,72)
 	dialogue.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	dialogue.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	dialogue.add_theme_font_size_override("font_size",28)
+	dialogue.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	dialogue.add_theme_font_size_override("font_size",26)
 	dialogue.add_theme_color_override("font_color",Color.WHITE)
+	dialogue.add_theme_color_override("font_shadow_color",Color(0,0,0,0.8))
+	dialogue.add_theme_constant_override("shadow_offset_x",2)
+	dialogue.add_theme_constant_override("shadow_offset_y",2)
 	dialogue.visible = false
+	dialogue_panel.visible = false
 	layer.add_child(dialogue)
 	jump_btn = Button.new()
 	jump_btn.text = "JUMP"
@@ -493,13 +553,13 @@ func _process(delta: float) -> void:
 
 		# 0-2.5 sec: establish parked car + walawwa.
 		if clock < 2.5:
-			cine_cam.global_position = Vector3(10.5,5.2,10.0)
+			cine_cam.global_position = Vector3(12.8,5.8,8.5)
 			cine_cam.look_at(Vector3(0.0,2.0,22.0),Vector3.UP)
 
 		# 2.5-8.5 sec: open doors and animate family stepping out.
 		elif clock < 8.0:
 			var exit_t: float = clampf((clock-2.5)/5.5,0.0,1.0)
-			cine_cam.global_position = Vector3(7.2,3.0,5.0)
+			cine_cam.global_position = Vector3(9.2,3.5,6.2)
 			cine_cam.look_at(parked + Vector3(0,1.1,0.8),Vector3.UP)
 
 			car_door_fl.rotation_degrees.y = lerpf(0.0,-58.0,clampf(exit_t*3.0,0.0,1.0))
@@ -511,19 +571,23 @@ func _process(delta: float) -> void:
 				father.visible = true
 				var ft: float = clampf((exit_t-0.08)/0.30,0.0,1.0)
 				father.global_position = parked + Vector3(-1.2,0.10 + sin(ft*PI)*0.10,-0.9).lerp(Vector3(-2.5,0.0,-0.7),smoothstep(0.0,1.0,ft))
+				animate_walk_pose(father,ft*TAU*1.3,1.0,false)
 			if exit_t > 0.20:
 				mother.visible = true
 				var mt: float = clampf((exit_t-0.20)/0.30,0.0,1.0)
 				mother.global_position = parked + Vector3(1.2,0.10 + sin(mt*PI)*0.10,-0.8).lerp(Vector3(2.5,0.0,-0.5),smoothstep(0.0,1.0,mt))
+				animate_walk_pose(mother,mt*TAU*1.3,0.9,false)
 			if exit_t > 0.36:
 				daughter.visible = true
 				var dt: float = clampf((exit_t-0.36)/0.28,0.0,1.0)
 				daughter.global_position = parked + Vector3(1.2,0.08 + sin(dt*PI)*0.08,0.9).lerp(Vector3(2.8,0.0,1.2),smoothstep(0.0,1.0,dt))
+				animate_walk_pose(daughter,dt*TAU*1.35,0.85,false)
 			if exit_t > 0.50:
 				cutscene_boy.visible = true
 				var bt: float = clampf((exit_t-0.50)/0.26,0.0,1.0)
 				cutscene_boy.global_position = parked + Vector3(-1.2,0.08 + sin(bt*PI)*0.08,0.9).lerp(Vector3(-2.6,0.0,1.4),smoothstep(0.0,1.0,bt))
 				cutscene_boy.rotation_degrees.y = lerpf(0.0,-18.0,bt)
+				animate_walk_pose(cutscene_boy,bt*TAU*1.45,1.0,true)
 
 		# 8.5-13 sec: grandma walks from inside to the veranda.
 		elif clock < 12.3:
@@ -531,22 +595,24 @@ func _process(delta: float) -> void:
 			grandma.position = Vector3(0.0,0.0,28.6).lerp(Vector3(-2.2,0.0,20.7),smoothstep(0.0,1.0,gt))
 			grandma.position.y = sin(gt*PI*4.0)*0.035
 			grandma.rotation_degrees.y = lerpf(180.0,0.0,gt)
-			cine_cam.global_position = Vector3(-6.8,3.2,18.2)
+			grandma.rotation_degrees.z = sin(gt*TAU*2.0)*1.2
+			cine_cam.global_position = Vector3(-10.5,3.8,15.4)
 			cine_cam.look_at(grandma.global_position + Vector3(0,1.4,0),Vector3.UP)
 
 		# 13-16 sec: family + grandma hero shot before dialogue.
 		else:
 			grandma.position = Vector3(-2.2,0.0,20.7)
-			cine_cam.global_position = Vector3(6.8,4.0,15.0)
+			cine_cam.global_position = Vector3(9.5,4.6,13.2)
 			cine_cam.look_at(Vector3(-0.5,1.5,20.0),Vector3.UP)
 
 		if clock > 15.0:
 			state = GameState.DIALOGUE
 			clock = 0.0
+			dialogue_panel.visible = true
 			dialogue.visible = true
 			dialogue.text = "ආච්චි: ආ මේ ළමයිනේ! එන්න ඇතුළට. ගොඩ කාලෙකින් ඔයාලව දැක්කෙ."
 	elif state == GameState.DIALOGUE:
-		cine_cam.global_position = Vector3(5.8,3.2,16.8)
+		cine_cam.global_position = Vector3(8.8,3.6,14.6)
 		cine_cam.look_at(grandma.global_position + Vector3(0,1.3,0),Vector3.UP)
 		if clock > 4.0 and clock <= 7.5:
 			dialogue.text = "අම්මා: අම්මේ... කොහොමද ඉතින්?"
@@ -563,6 +629,7 @@ func _process(delta: float) -> void:
 		yaw -= look.x * 0.004
 		pitch = clamp(pitch-look.y*0.003,-0.55,0.35)
 		pivot.rotation = Vector3(pitch,yaw,0)
+		update_third_person_camera()
 
 func begin_play() -> void:
 	if state == GameState.PLAY:
@@ -576,6 +643,7 @@ func begin_play() -> void:
 	play_cam.current = true
 	cine_cam.current = false
 	dialogue.visible = false
+	dialogue_panel.visible = false
 	controls.set_active(true)
 	jump_btn.visible = true
 	interact_btn.visible = true
@@ -600,11 +668,13 @@ func _physics_process(delta: float) -> void:
 	player.move_and_slide()
 	if d.length() > 0.1:
 		body_visual.rotation.y = lerp_angle(body_visual.rotation.y,atan2(d.x,d.z),delta*8)
+		animate_walk_pose(body_visual,Time.get_ticks_msec()*0.012,0.75,true)
 		step_timer -= delta
 		if step_timer <= 0 and player.is_on_floor():
 			step_sound.play()
 			step_timer = 0.45
 	else:
+		animate_walk_pose(body_visual,0.0,0.0,true)
 		step_timer = 0
 	if player.global_position.z > 24.6 and player.global_position.z <= 30.3:
 		objective.text = "OBJECTIVE: Main hall එක explore කරන්න"
@@ -613,27 +683,35 @@ func _physics_process(delta: float) -> void:
 
 func on_interact() -> void:
 	if player.global_position.distance_to(grandma.global_position) < 3.2:
+		dialogue_panel.visible = true
 		dialogue.visible = true
 		dialogue.text = "ආච්චි: පුතා, ඇතුළට ගිහින් වටේ බලන්න. කෑමත් ලෑස්ති කරනවා."
 		await get_tree().create_timer(2.8).timeout
 		dialogue.visible = false
+	dialogue_panel.visible = false
 		return
 
 	var p: Vector3 = player.global_position
 	if p.z > 30.0 and p.x < -1.2:
+		dialogue_panel.visible = true
 		dialogue.visible = true
 		dialogue.text = "කොල්ලා: වාව්... මේ kitchen එක පරණ ගමේ kitchen එකක් වගේ!"
 		await get_tree().create_timer(2.6).timeout
 		dialogue.visible = false
+	dialogue_panel.visible = false
 	elif p.z > 30.0 and p.x > 1.2:
+		dialogue_panel.visible = true
 		dialogue.visible = true
 		dialogue.text = "කොල්ලා: මේ room එකේ පරණ බඩු ගොඩක් තියෙනවා..."
 		await get_tree().create_timer(2.6).timeout
 		dialogue.visible = false
+	dialogue_panel.visible = false
 	elif p.z > 28.5:
+		dialogue_panel.visible = true
 		dialogue.visible = true
 		dialogue.text = "කොල්ලා: මේ photos වල ඉන්නේ අපේ පරණ අය වෙන්න ඇති..."
 		await get_tree().create_timer(2.6).timeout
 		dialogue.visible = false
+	dialogue_panel.visible = false
 	else:
 		objective.text = "වලව්ව ඇතුළට ගිහින් rooms explore කරන්න"
