@@ -72,7 +72,9 @@ func _mountain_ridge(center: Vector3, base_r: float, base_h: float, color: Color
 			color,
 			6 + (i % 3)
 		)
-		peak.scale.z = depth_scale
+		peak.scale = Vector3(0.92 + float(i%2)*0.16, 1.0, depth_scale * (0.88 + float(i%3)*0.07))
+		peak.rotation_degrees.y = -12.0 + float(i)*4.7
+		peak.rotation_degrees.z = -3.0 + float((i*2)%5)*1.5
 
 	# Low rounded foot-hills merge the pointed peaks into one ridge.
 	for j: int in range(4):
@@ -119,10 +121,10 @@ func _build_mid_mountain_ring() -> void:
 
 func _build_sunrise() -> void:
 	# Large sun placed in the intentional mountain gap.
-	var sun: MeshInstance3D = _sphere(self, Vector3(0.0,34.0,145.0), 7.0, Color("ffd06a"), true)
+	var sun: MeshInstance3D = _sphere(self, Vector3(0.0,31.5,145.0), 7.0, Color("ffc55f"), true)
 	sun.scale = Vector3(1.0,1.0,0.28)
 
-	var halo: MeshInstance3D = _sphere(self, Vector3(0.0,33.0,146.5), 13.0, Color(1.0,0.63,0.22,0.22), true)
+	var halo: MeshInstance3D = _sphere(self, Vector3(0.0,33.0,146.5), 13.0, Color(1.0,0.54,0.16,0.26), true)
 	halo.scale = Vector3(1.10,0.72,0.18)
 
 	var glow: OmniLight3D = OmniLight3D.new()
