@@ -675,7 +675,7 @@ func _process(delta: float) -> void:
 			cine_cam.look_at(grandma.global_position + Vector3(0,1.3,0),Vector3.UP)
 		else:
 			cine_cam.global_position = Vector3(-6.8,3.0,9.8)
-			cine_cam.look_at(parked + Vector3(0,1.15,1.0),Vector3.UP)
+			cine_cam.look_at(car.global_position + Vector3(0,1.15,1.0),Vector3.UP)
 		if clock > 4.0 and clock <= 7.5:
 			dialogue.text = "අම්මා: අම්මේ... කොහොමද ඉතින්?"
 		elif clock > 7.5 and clock <= 11.0:
