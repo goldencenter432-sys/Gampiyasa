@@ -4,6 +4,7 @@ const MobileControls = preload("res://scripts/mobile_controls.gd")
 const EnvironmentV021 = preload("res://scripts/environment_v021.gd")
 const VisualsV022 = preload("res://scripts/visuals_v022.gd")
 const ContentV024 = preload("res://scripts/content_v024.gd")
+const EnvironmentV025 = preload("res://scripts/environment_v025.gd")
 enum GameState { DRIVE, ARRIVAL, DIALOGUE, PLAY }
 
 var state := GameState.DRIVE
@@ -13,6 +14,15 @@ var family: Node3D
 var grandma: Node3D
 var visuals_v022: Node3D
 var content_v024: Node3D
+var scenery_v025: Node3D
+var father: Node3D
+var mother: Node3D
+var daughter: Node3D
+var cutscene_boy: Node3D
+var car_door_fl: Node3D
+var car_door_fr: Node3D
+var car_door_rl: Node3D
+var car_door_rr: Node3D
 var player: CharacterBody3D
 var body_visual: Node3D
 var pivot: Node3D
@@ -43,6 +53,8 @@ func _ready() -> void:
 	add_child(visuals_v022)
 	content_v024 = ContentV024.new()
 	add_child(content_v024)
+	scenery_v025 = EnvironmentV025.new()
+	add_child(scenery_v025)
 	build_people_and_car()
 	build_player()
 	build_ui()
@@ -197,7 +209,7 @@ func person(parent: Node, p: Vector3, cloth: Color, scale_v := 1.0) -> Node3D:
 
 func build_grandma(p: Vector3) -> Node3D:
 	var n: Node3D = Node3D.new()
-	n.name = "Grandma_v0_2_2"
+	n.name = "Grandma_v0_2_5"
 	n.position = p
 	n.scale = Vector3.ONE * 0.92
 	add_child(n)
@@ -264,13 +276,37 @@ func build_people_and_car() -> void:
 	box(car, Vector3(-1.34,1.46,-0.85), Vector3(0.22,0.16,0.28), chrome)
 	box(car, Vector3(1.34,1.46,-0.85), Vector3(0.22,0.16,0.28), chrome)
 
+	# Hinged car-door visuals used by the arrival animation.
+	car_door_fl = Node3D.new()
+	car_door_fl.position = Vector3(-1.25,1.08,-0.95)
+	car.add_child(car_door_fl)
+	box(car_door_fl,Vector3(0,0,0),Vector3(0.10,1.25,1.15),body_color)
+	car_door_fr = Node3D.new()
+	car_door_fr.position = Vector3(1.25,1.08,-0.95)
+	car.add_child(car_door_fr)
+	box(car_door_fr,Vector3(0,0,0),Vector3(0.10,1.25,1.15),body_color)
+	car_door_rl = Node3D.new()
+	car_door_rl.position = Vector3(-1.25,1.08,0.85)
+	car.add_child(car_door_rl)
+	box(car_door_rl,Vector3(0,0,0),Vector3(0.10,1.25,1.15),body_color)
+	car_door_rr = Node3D.new()
+	car_door_rr.position = Vector3(1.25,1.08,0.85)
+	car.add_child(car_door_rr)
+	box(car_door_rr,Vector3(0,0,0),Vector3(0.10,1.25,1.15),body_color)
+
 	family = Node3D.new()
 	family.visible = false
 	add_child(family)
-	person(family,Vector3(-2.2,0,16),Color("526d8b"))
-	person(family,Vector3(2.1,0,15.7),Color("9b617c"),0.95)
-	person(family,Vector3(3.4,0,16.6),Color("d19d44"),0.78)
-	grandma = build_grandma(Vector3(-3.1,0,20.6))
+	father = person(family,Vector3(-1.45,0,7.4),Color("526d8b"))
+	father.name = "Father"
+	mother = person(family,Vector3(1.45,0,7.2),Color("9b617c"),0.95)
+	mother.name = "Mother"
+	daughter = person(family,Vector3(1.65,0,8.7),Color("d19d44"),0.78)
+	daughter.name = "Daughter"
+	cutscene_boy = person(family,Vector3(-1.55,0,8.7),Color("4b76a5"),0.72)
+	cutscene_boy.name = "BoyCutscene"
+
+	grandma = build_grandma(Vector3(0.0,0,28.6))
 	grandma.visible = true
 
 func build_player() -> void:
@@ -288,7 +324,9 @@ func build_player() -> void:
 	player.add_child(pivot)
 	pivot.position = Vector3(0,1.2,0)
 	play_cam = Camera3D.new()
-	play_cam.position = Vector3(0,1.2,-4.8)
+	play_cam.position = Vector3(0,1.55,4.6)
+	play_cam.rotation_degrees.x = -8.0
+	play_cam.fov = 72.0
 	pivot.add_child(play_cam)
 	cine_cam = Camera3D.new()
 	add_child(cine_cam)
@@ -304,7 +342,7 @@ func build_ui() -> void:
 	objective = Label.new()
 	objective.position = Vector2(28,26)
 	objective.add_theme_font_size_override("font_size",22)
-	objective.text = "ගමට යන ගමන්...  •  v0.2.4"
+	objective.text = "ගමට යන ගමන්...  •  v0.2.5"
 	layer.add_child(objective)
 	dialogue = Label.new()
 	dialogue.position = Vector2(100,560)
@@ -385,7 +423,7 @@ func start_cutscene() -> void:
 func _process(delta: float) -> void:
 	clock += delta
 	if state == GameState.DRIVE:
-		var t: float = clampf(clock / 16.0, 0.0, 1.0)
+		var t: float = clampf(clock / 18.0, 0.0, 1.0)
 		car.position = drive_a.lerp(drive_b, smoothstep(0.0, 1.0, t))
 
 		# v0.2.4 four-shot intro: road chase -> field panorama -> canal side -> walawwa approach.
@@ -415,32 +453,86 @@ func _process(delta: float) -> void:
 			clock = 0.0
 			cine_stage = 0
 			family.visible = true
+			father.visible = false
+			mother.visible = false
+			daughter.visible = false
+			cutscene_boy.visible = false
 			grandma.visible = true
+			grandma.position = Vector3(0.0,0,28.6)
 			engine.stop()
 			if visuals_v022 != null and visuals_v022.has_method("trigger_arrival_dust"):
 				visuals_v022.call("trigger_arrival_dust", car.global_position)
 			objective.text = "ආච්චිලාගේ ගෙදරට ආවා"
 	elif state == GameState.ARRIVAL:
+		# Full family exit + grandma house-exit animation.
+		var parked: Vector3 = car.global_position
 		grandma.visible = true
-		if clock < 2.2:
-			# Establish the walawwa and parked car together.
-			var a: float = clock / 2.2
-			cine_cam.global_position = Vector3(10.0 - a * 2.2, 5.0, 11.0 + a * 1.0)
-			cine_cam.look_at(Vector3(0.0, 2.0, 22.0), Vector3.UP)
+
+		# 0-2.5 sec: establish parked car + walawwa.
+		if clock < 2.5:
+			cine_cam.global_position = Vector3(10.5,5.2,10.0)
+			cine_cam.look_at(Vector3(0.0,2.0,22.0),Vector3.UP)
+
+		# 2.5-8.5 sec: open doors and animate family stepping out.
+		elif clock < 8.5:
+			var exit_t: float = clampf((clock-2.5)/6.0,0.0,1.0)
+			cine_cam.global_position = Vector3(7.2,3.0,5.0)
+			cine_cam.look_at(parked + Vector3(0,1.1,0.8),Vector3.UP)
+
+			car_door_fl.rotation_degrees.y = lerpf(0.0,-58.0,clampf(exit_t*3.0,0.0,1.0))
+			car_door_fr.rotation_degrees.y = lerpf(0.0,58.0,clampf(exit_t*3.0,0.0,1.0))
+			car_door_rl.rotation_degrees.y = lerpf(0.0,-62.0,clampf((exit_t-0.16)*3.0,0.0,1.0))
+			car_door_rr.rotation_degrees.y = lerpf(0.0,62.0,clampf((exit_t-0.16)*3.0,0.0,1.0))
+
+			if exit_t > 0.08:
+				father.visible = true
+				var ft: float = clampf((exit_t-0.08)/0.30,0.0,1.0)
+				father.global_position = parked + Vector3(-1.2,0.0,-0.9).lerp(Vector3(-2.5,0.0,-0.7),ft)
+			if exit_t > 0.20:
+				mother.visible = true
+				var mt: float = clampf((exit_t-0.20)/0.30,0.0,1.0)
+				mother.global_position = parked + Vector3(1.2,0.0,-0.8).lerp(Vector3(2.5,0.0,-0.5),mt)
+			if exit_t > 0.36:
+				daughter.visible = true
+				var dt: float = clampf((exit_t-0.36)/0.28,0.0,1.0)
+				daughter.global_position = parked + Vector3(1.2,0.0,0.9).lerp(Vector3(2.8,0.0,1.2),dt)
+			if exit_t > 0.50:
+				cutscene_boy.visible = true
+				var bt: float = clampf((exit_t-0.50)/0.26,0.0,1.0)
+				cutscene_boy.global_position = parked + Vector3(-1.2,0.0,0.9).lerp(Vector3(-2.6,0.0,1.4),bt)
+				cutscene_boy.rotation_degrees.y = lerpf(0.0,-18.0,bt)
+
+		# 8.5-13 sec: grandma walks from inside to the veranda.
+		elif clock < 13.0:
+			var gt: float = clampf((clock-8.5)/4.5,0.0,1.0)
+			grandma.position = Vector3(0.0,0.0,28.6).lerp(Vector3(-2.2,0.0,20.7),smoothstep(0.0,1.0,gt))
+			grandma.rotation_degrees.y = lerpf(180.0,0.0,gt)
+			cine_cam.global_position = Vector3(-6.8,3.2,18.2)
+			cine_cam.look_at(grandma.global_position + Vector3(0,1.4,0),Vector3.UP)
+
+		# 13-16 sec: family + grandma hero shot before dialogue.
 		else:
-			# Cut closer to grandma at the veranda entrance.
-			var b: float = clampf((clock - 2.2) / 2.4, 0.0, 1.0)
-			cine_cam.global_position = Vector3(-7.0 + b * 2.0, 3.4, 17.0 + b * 1.2)
-			cine_cam.look_at(grandma.global_position + Vector3(0,1.35,0), Vector3.UP)
-		if clock > 4.8:
+			grandma.position = Vector3(-2.2,0.0,20.7)
+			cine_cam.global_position = Vector3(6.8,4.0,15.0)
+			cine_cam.look_at(Vector3(-0.5,1.5,20.0),Vector3.UP)
+
+		if clock > 16.0:
 			state = GameState.DIALOGUE
 			clock = 0.0
 			dialogue.visible = true
 			dialogue.text = "ආච්චි: ආ මේ ළමයිනේ! එන්න ඇතුළට. ගොඩ කාලෙකින් ඔයාලව දැක්කෙ."
 	elif state == GameState.DIALOGUE:
-		if clock > 4.5:
-			dialogue.text = "කොල්ලා: ආච්චි අම්මේ... බඩගිනියි!"
-		if clock > 8.0:
+		cine_cam.global_position = Vector3(5.8,3.2,16.8)
+		cine_cam.look_at(grandma.global_position + Vector3(0,1.3,0),Vector3.UP)
+		if clock > 4.0 and clock <= 7.5:
+			dialogue.text = "අම්මා: අම්මේ... කොහොමද ඉතින්?"
+		elif clock > 7.5 and clock <= 11.0:
+			dialogue.text = "ආච්චි: හොඳින් ඉන්නවා දුවේ. ඔයාලව දැක්ක එකම මට සතුටක්."
+		elif clock > 11.0 and clock <= 14.5:
+			dialogue.text = "කොල්ලා: ආච්චි අම්මේ... මට බඩගිනියි..."
+		elif clock > 14.5:
+			dialogue.text = "ආච්චි: එන්න පුතේ. කෑමත් ලෑස්ති කරලා තියෙන්නෙ."
+		if clock > 18.0:
 			begin_play()
 	elif state == GameState.PLAY:
 		var look: Vector2 = controls.call("consume_look")
@@ -454,8 +546,9 @@ func begin_play() -> void:
 	state = GameState.PLAY
 	clock = 0
 	engine.stop()
+	cutscene_boy.visible = false
 	player.visible = true
-	player.position = Vector3(0,1.1,18)
+	player.position = Vector3(-1.2,1.1,17.4)
 	play_cam.current = true
 	cine_cam.current = false
 	dialogue.visible = false
