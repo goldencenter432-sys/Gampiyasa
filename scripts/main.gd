@@ -5,6 +5,7 @@ const EnvironmentV021 = preload("res://scripts/environment_v021.gd")
 const VisualsV022 = preload("res://scripts/visuals_v022.gd")
 const ContentV024 = preload("res://scripts/content_v024.gd")
 const EnvironmentV025 = preload("res://scripts/environment_v025.gd")
+const InteriorPolishV0252 = preload("res://scripts/interior_polish_v0252.gd")
 enum GameState { DRIVE, ARRIVAL, DIALOGUE, PLAY }
 
 var state := GameState.DRIVE
@@ -15,6 +16,7 @@ var grandma: Node3D
 var visuals_v022: Node3D
 var content_v024: Node3D
 var scenery_v025: Node3D
+var interior_polish_v0252: Node3D
 var father: Node3D
 var mother: Node3D
 var daughter: Node3D
@@ -61,6 +63,8 @@ func _ready() -> void:
 	add_child(content_v024)
 	scenery_v025 = EnvironmentV025.new()
 	add_child(scenery_v025)
+	interior_polish_v0252 = InteriorPolishV0252.new()
+	add_child(interior_polish_v0252)
 	build_people_and_car()
 	build_player()
 	build_ui()
