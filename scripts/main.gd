@@ -29,8 +29,9 @@ var engine: AudioStreamPlayer3D
 var ambience: AudioStreamPlayer
 var step_sound: AudioStreamPlayer3D
 var step_timer := 0.0
+var cine_stage := 0
 var drive_a := Vector3(0,0.43,-35)
-var drive_b := Vector3(0,0.43,14)
+var drive_b := Vector3(0,0.43,8.0)
 
 func _ready() -> void:
 	build_world()
@@ -299,7 +300,7 @@ func build_ui() -> void:
 	objective = Label.new()
 	objective.position = Vector2(28,26)
 	objective.add_theme_font_size_override("font_size",22)
-	objective.text = "ගමට යන ගමන්...  •  v0.2.2"
+	objective.text = "ගමට යන ගමන්...  •  v0.2.3"
 	layer.add_child(objective)
 	dialogue = Label.new()
 	dialogue.position = Vector2(100,560)
@@ -372,6 +373,7 @@ func build_audio() -> void:
 func start_cutscene() -> void:
 	state = GameState.DRIVE
 	clock = 0
+	cine_stage = 0
 	cine_cam.current = true
 	play_cam.current = false
 	engine.play()
@@ -379,13 +381,30 @@ func start_cutscene() -> void:
 func _process(delta: float) -> void:
 	clock += delta
 	if state == GameState.DRIVE:
-		var t: float = clampf(clock / 9.0, 0.0, 1.0)
-		car.position = drive_a.lerp(drive_b,smoothstep(0,1,t))
-		cine_cam.global_position = car.global_position + Vector3(8,4.5,-9)
-		cine_cam.look_at(car.global_position+Vector3(0,0.8,2),Vector3.UP)
-		if t >= 1:
+		var t: float = clampf(clock / 10.0, 0.0, 1.0)
+		car.position = drive_a.lerp(drive_b, smoothstep(0.0, 1.0, t))
+
+		# Three-shot intro: low road tracking -> wide village -> front arrival.
+		if t < 0.34:
+			cine_stage = 0
+			var shot_t: float = t / 0.34
+			cine_cam.global_position = car.global_position + Vector3(5.8, 2.1, -7.0 + shot_t * 1.5)
+			cine_cam.look_at(car.global_position + Vector3(0, 0.9, 1.8), Vector3.UP)
+		elif t < 0.72:
+			cine_stage = 1
+			var wide_t: float = (t - 0.34) / 0.38
+			cine_cam.global_position = car.global_position + Vector3(-9.0 + wide_t * 2.0, 6.7, -4.5)
+			cine_cam.look_at(car.global_position + Vector3(0, 0.7, 4.0), Vector3.UP)
+		else:
+			cine_stage = 2
+			var arrival_t: float = (t - 0.72) / 0.28
+			cine_cam.global_position = Vector3(7.5 - arrival_t * 2.4, 3.6 + arrival_t * 0.8, 4.0 + arrival_t * 5.0)
+			cine_cam.look_at(car.global_position + Vector3(0, 0.9, 0.8), Vector3.UP)
+
+		if t >= 1.0:
 			state = GameState.ARRIVAL
-			clock = 0
+			clock = 0.0
+			cine_stage = 0
 			family.visible = true
 			grandma.visible = true
 			engine.stop()
@@ -394,11 +413,19 @@ func _process(delta: float) -> void:
 			objective.text = "ආච්චිලාගේ ගෙදරට ආවා"
 	elif state == GameState.ARRIVAL:
 		grandma.visible = true
-		cine_cam.global_position = Vector3(7.5,4.2,16.8)
-		cine_cam.look_at(Vector3(-1.8,1.55,20.8),Vector3.UP)
-		if clock > 2.8:
+		if clock < 1.6:
+			# Establish the walawwa and parked car together.
+			var a: float = clock / 1.6
+			cine_cam.global_position = Vector3(10.0 - a * 2.2, 5.0, 11.0 + a * 1.0)
+			cine_cam.look_at(Vector3(0.0, 2.0, 22.0), Vector3.UP)
+		else:
+			# Cut closer to grandma at the veranda entrance.
+			var b: float = clampf((clock - 1.6) / 1.8, 0.0, 1.0)
+			cine_cam.global_position = Vector3(-7.0 + b * 2.0, 3.4, 17.0 + b * 1.2)
+			cine_cam.look_at(grandma.global_position + Vector3(0,1.35,0), Vector3.UP)
+		if clock > 3.5:
 			state = GameState.DIALOGUE
-			clock = 0
+			clock = 0.0
 			dialogue.visible = true
 			dialogue.text = "ආච්චි: ආ මේ ළමයිනේ! එන්න ඇතුළට. ගොඩ කාලෙකින් ඔයාලව දැක්කෙ."
 	elif state == GameState.DIALOGUE:
