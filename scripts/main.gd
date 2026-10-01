@@ -1,6 +1,7 @@
 extends Node3D
 
 const MobileControls = preload("res://scripts/mobile_controls.gd")
+const EnvironmentV021 = preload("res://scripts/environment_v021.gd")
 enum GameState { DRIVE, ARRIVAL, DIALOGUE, PLAY }
 
 var state := GameState.DRIVE
@@ -31,8 +32,8 @@ var drive_b := Vector3(0,0.65,14)
 
 func _ready() -> void:
 	build_world()
-	build_village()
-	build_house()
+	var environment_v021: Node3D = EnvironmentV021.new()
+	add_child(environment_v021)
 	build_people_and_car()
 	build_player()
 	build_ui()
@@ -181,14 +182,50 @@ func person(parent: Node, p: Vector3, cloth: Color, scale_v := 1.0) -> Node3D:
 
 func build_people_and_car() -> void:
 	car = Node3D.new()
+	car.name = "FamilyCar_v0_2_1"
 	car.position = drive_a
 	add_child(car)
-	box(car,Vector3(0,0.65,0),Vector3(2.4,0.8,4.2),Color("285d73"))
-	box(car,Vector3(0,1.25,0.1),Vector3(2.05,0.75,2.3),Color("557f8b"))
-	for x in [-1.15,1.15]:
-		for z in [-1.35,1.35]:
-			var w := cylinder(car,Vector3(x,0.35,z),0.42,0.3,Color("171717"))
-			w.rotation_degrees.z = 90
+
+	var body_color: Color = Color("294f5f")
+	var body_light: Color = Color("3f6875")
+	var chrome: Color = Color("b6b4ac")
+	var glass: Color = Color("38535c")
+
+	# More detailed classic family car silhouette.
+	box(car, Vector3(0,0.62,0), Vector3(2.50,0.66,4.65), body_color)
+	box(car, Vector3(0,0.98,-1.55), Vector3(2.35,0.36,1.45), body_light)
+	box(car, Vector3(0,1.15,1.50), Vector3(2.30,0.42,1.20), body_color)
+	box(car, Vector3(0,1.42,0.05), Vector3(2.05,0.88,2.25), body_light)
+
+	var windshield: MeshInstance3D = box(car, Vector3(0,1.62,-1.05), Vector3(1.84,0.64,0.10), glass)
+	windshield.rotation_degrees.x = -16.0
+	var rear_window: MeshInstance3D = box(car, Vector3(0,1.62,1.12), Vector3(1.80,0.58,0.10), glass)
+	rear_window.rotation_degrees.x = 14.0
+	box(car, Vector3(-1.03,1.52,0.02), Vector3(0.08,0.62,1.45), glass)
+	box(car, Vector3(1.03,1.52,0.02), Vector3(0.08,0.62,1.45), glass)
+
+	# Bumpers, grille and lamps.
+	box(car, Vector3(0,0.55,-2.38), Vector3(2.58,0.15,0.16), chrome)
+	box(car, Vector3(0,0.55,2.38), Vector3(2.58,0.15,0.16), chrome)
+	box(car, Vector3(0,0.82,-2.36), Vector3(1.10,0.32,0.09), Color("22272a"))
+	sphere(car, Vector3(-0.78,0.86,-2.34), 0.18, Color("f1e2b3"))
+	sphere(car, Vector3(0.78,0.86,-2.34), 0.18, Color("f1e2b3"))
+	sphere(car, Vector3(-0.82,0.84,2.34), 0.15, Color("9f342e"))
+	sphere(car, Vector3(0.82,0.84,2.34), 0.15, Color("9f342e"))
+
+	var wheel_xs: Array[float] = [-1.20, 1.20]
+	var wheel_zs: Array[float] = [-1.55, 1.55]
+	for x: float in wheel_xs:
+		for z: float in wheel_zs:
+			var wheel: MeshInstance3D = cylinder(car, Vector3(x,0.38,z), 0.43, 0.32, Color("171717"))
+			wheel.rotation_degrees.z = 90.0
+			var hub: MeshInstance3D = cylinder(car, Vector3(x,0.38,z), 0.20, 0.34, chrome)
+			hub.rotation_degrees.z = 90.0
+
+	# Side mirrors.
+	box(car, Vector3(-1.34,1.46,-0.85), Vector3(0.22,0.16,0.28), chrome)
+	box(car, Vector3(1.34,1.46,-0.85), Vector3(0.22,0.16,0.28), chrome)
+
 	family = Node3D.new()
 	family.visible = false
 	add_child(family)
@@ -229,7 +266,7 @@ func build_ui() -> void:
 	objective = Label.new()
 	objective.position = Vector2(28,26)
 	objective.add_theme_font_size_override("font_size",22)
-	objective.text = "ගමට යන ගමන්..."
+	objective.text = "ගමට යන ගමන්...  •  v0.2.1"
 	layer.add_child(objective)
 	dialogue = Label.new()
 	dialogue.position = Vector2(100,560)
