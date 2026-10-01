@@ -196,9 +196,9 @@ func _build_photo_gallery() -> void:
 
 	# Photo gallery on the new partition facing the main hall.
 	var xs: Array[float] = [-6.4,-4.6,-2.8,2.8,4.6,6.4]
+	var frame_color: Color = Color("4d3226")
 	for i: int in range(xs.size()):
 		var x: float = xs[i]
-		var frame_color: Color = Color("4d3226")
 		var photo_color: Color = Color("aa947b") if i%2==0 else Color("8d9a83")
 		_box(gallery,Vector3(x,2.75,30.36),Vector3(1.35,1.55,0.10),frame_color,false)
 		_box(gallery,Vector3(x,2.75,30.29),Vector3(1.05,1.25,0.08),photo_color,false)
