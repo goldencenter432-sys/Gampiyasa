@@ -3,6 +3,7 @@ extends Node3D
 const MobileControls = preload("res://scripts/mobile_controls.gd")
 const EnvironmentV021 = preload("res://scripts/environment_v021.gd")
 const VisualsV022 = preload("res://scripts/visuals_v022.gd")
+const ContentV024 = preload("res://scripts/content_v024.gd")
 enum GameState { DRIVE, ARRIVAL, DIALOGUE, PLAY }
 
 var state := GameState.DRIVE
@@ -11,6 +12,7 @@ var car: Node3D
 var family: Node3D
 var grandma: Node3D
 var visuals_v022: Node3D
+var content_v024: Node3D
 var player: CharacterBody3D
 var body_visual: Node3D
 var pivot: Node3D
@@ -30,7 +32,7 @@ var ambience: AudioStreamPlayer
 var step_sound: AudioStreamPlayer3D
 var step_timer := 0.0
 var cine_stage := 0
-var drive_a := Vector3(0,0.43,-35)
+var drive_a := Vector3(0,0.43,-79.0)
 var drive_b := Vector3(0,0.43,8.0)
 
 func _ready() -> void:
@@ -39,6 +41,8 @@ func _ready() -> void:
 	add_child(environment_v021)
 	visuals_v022 = VisualsV022.new()
 	add_child(visuals_v022)
+	content_v024 = ContentV024.new()
+	add_child(content_v024)
 	build_people_and_car()
 	build_player()
 	build_ui()
@@ -300,7 +304,7 @@ func build_ui() -> void:
 	objective = Label.new()
 	objective.position = Vector2(28,26)
 	objective.add_theme_font_size_override("font_size",22)
-	objective.text = "ගමට යන ගමන්...  •  v0.2.3"
+	objective.text = "ගමට යන ගමන්...  •  v0.2.4"
 	layer.add_child(objective)
 	dialogue = Label.new()
 	dialogue.position = Vector2(100,560)
@@ -381,25 +385,30 @@ func start_cutscene() -> void:
 func _process(delta: float) -> void:
 	clock += delta
 	if state == GameState.DRIVE:
-		var t: float = clampf(clock / 10.0, 0.0, 1.0)
+		var t: float = clampf(clock / 16.0, 0.0, 1.0)
 		car.position = drive_a.lerp(drive_b, smoothstep(0.0, 1.0, t))
 
-		# Three-shot intro: low road tracking -> wide village -> front arrival.
-		if t < 0.34:
+		# v0.2.4 four-shot intro: road chase -> field panorama -> canal side -> walawwa approach.
+		if t < 0.25:
 			cine_stage = 0
-			var shot_t: float = t / 0.34
-			cine_cam.global_position = car.global_position + Vector3(5.8, 2.1, -7.0 + shot_t * 1.5)
-			cine_cam.look_at(car.global_position + Vector3(0, 0.9, 1.8), Vector3.UP)
-		elif t < 0.72:
+			var shot_t: float = t / 0.25
+			cine_cam.global_position = car.global_position + Vector3(5.4, 2.0, -7.8 + shot_t * 1.6)
+			cine_cam.look_at(car.global_position + Vector3(0, 0.9, 2.2), Vector3.UP)
+		elif t < 0.50:
 			cine_stage = 1
-			var wide_t: float = (t - 0.34) / 0.38
-			cine_cam.global_position = car.global_position + Vector3(-9.0 + wide_t * 2.0, 6.7, -4.5)
-			cine_cam.look_at(car.global_position + Vector3(0, 0.7, 4.0), Vector3.UP)
-		else:
+			var field_t: float = (t - 0.25) / 0.25
+			cine_cam.global_position = car.global_position + Vector3(-11.0 + field_t * 2.0, 7.8, -2.5)
+			cine_cam.look_at(car.global_position + Vector3(0, 0.7, 5.0), Vector3.UP)
+		elif t < 0.74:
 			cine_stage = 2
-			var arrival_t: float = (t - 0.72) / 0.28
-			cine_cam.global_position = Vector3(7.5 - arrival_t * 2.4, 3.6 + arrival_t * 0.8, 4.0 + arrival_t * 5.0)
-			cine_cam.look_at(car.global_position + Vector3(0, 0.9, 0.8), Vector3.UP)
+			var canal_t: float = (t - 0.50) / 0.24
+			cine_cam.global_position = car.global_position + Vector3(-7.5, 2.8 + canal_t * 1.2, -4.0)
+			cine_cam.look_at(car.global_position + Vector3(0, 0.8, 3.0), Vector3.UP)
+		else:
+			cine_stage = 3
+			var arrival_t: float = (t - 0.74) / 0.26
+			cine_cam.global_position = Vector3(8.5 - arrival_t * 3.0, 4.2 + arrival_t * 0.5, 1.0 + arrival_t * 8.0)
+			cine_cam.look_at(car.global_position + Vector3(0, 0.9, 1.0), Vector3.UP)
 
 		if t >= 1.0:
 			state = GameState.ARRIVAL
@@ -413,17 +422,17 @@ func _process(delta: float) -> void:
 			objective.text = "ආච්චිලාගේ ගෙදරට ආවා"
 	elif state == GameState.ARRIVAL:
 		grandma.visible = true
-		if clock < 1.6:
+		if clock < 2.2:
 			# Establish the walawwa and parked car together.
-			var a: float = clock / 1.6
+			var a: float = clock / 2.2
 			cine_cam.global_position = Vector3(10.0 - a * 2.2, 5.0, 11.0 + a * 1.0)
 			cine_cam.look_at(Vector3(0.0, 2.0, 22.0), Vector3.UP)
 		else:
 			# Cut closer to grandma at the veranda entrance.
-			var b: float = clampf((clock - 1.6) / 1.8, 0.0, 1.0)
+			var b: float = clampf((clock - 2.2) / 2.4, 0.0, 1.0)
 			cine_cam.global_position = Vector3(-7.0 + b * 2.0, 3.4, 17.0 + b * 1.2)
 			cine_cam.look_at(grandma.global_position + Vector3(0,1.35,0), Vector3.UP)
-		if clock > 3.5:
+		if clock > 4.8:
 			state = GameState.DIALOGUE
 			clock = 0.0
 			dialogue.visible = true
@@ -480,14 +489,34 @@ func _physics_process(delta: float) -> void:
 			step_timer = 0.45
 	else:
 		step_timer = 0
-	if player.global_position.z > 24.6:
-		objective.text = "OBJECTIVE COMPLETE ✓  වලව්ව ඇතුළත explore කරන්න"
+	if player.global_position.z > 24.6 and player.global_position.z <= 30.3:
+		objective.text = "OBJECTIVE: Main hall එක explore කරන්න"
+	elif player.global_position.z > 30.3:
+		objective.text = "OBJECTIVE: Rooms, photos සහ kitchen එක explore කරන්න"
 
 func on_interact() -> void:
 	if player.global_position.distance_to(grandma.global_position) < 3.2:
 		dialogue.visible = true
-		dialogue.text = "ආච්චි: පුතා, ඇතුළට ගිහින් කෑම කන්න."
-		await get_tree().create_timer(2.5).timeout
+		dialogue.text = "ආච්චි: පුතා, ඇතුළට ගිහින් වටේ බලන්න. කෑමත් ලෑස්ති කරනවා."
+		await get_tree().create_timer(2.8).timeout
+		dialogue.visible = false
+		return
+
+	var p: Vector3 = player.global_position
+	if p.z > 30.0 and p.x < -1.2:
+		dialogue.visible = true
+		dialogue.text = "කොල්ලා: වාව්... මේ kitchen එක පරණ ගමේ kitchen එකක් වගේ!"
+		await get_tree().create_timer(2.6).timeout
+		dialogue.visible = false
+	elif p.z > 30.0 and p.x > 1.2:
+		dialogue.visible = true
+		dialogue.text = "කොල්ලා: මේ room එකේ පරණ බඩු ගොඩක් තියෙනවා..."
+		await get_tree().create_timer(2.6).timeout
+		dialogue.visible = false
+	elif p.z > 28.5:
+		dialogue.visible = true
+		dialogue.text = "කොල්ලා: මේ photos වල ඉන්නේ අපේ පරණ අය වෙන්න ඇති..."
+		await get_tree().create_timer(2.6).timeout
 		dialogue.visible = false
 	else:
-		objective.text = "Interact කරන්න ආච්චි ළඟට යන්න"
+		objective.text = "වලව්ව ඇතුළට ගිහින් rooms explore කරන්න"
