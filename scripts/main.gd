@@ -2,6 +2,7 @@ extends Node3D
 
 const MobileControls = preload("res://scripts/mobile_controls.gd")
 const EnvironmentV021 = preload("res://scripts/environment_v021.gd")
+const VisualsV022 = preload("res://scripts/visuals_v022.gd")
 enum GameState { DRIVE, ARRIVAL, DIALOGUE, PLAY }
 
 var state := GameState.DRIVE
@@ -9,6 +10,7 @@ var clock := 0.0
 var car: Node3D
 var family: Node3D
 var grandma: Node3D
+var visuals_v022: Node3D
 var player: CharacterBody3D
 var body_visual: Node3D
 var pivot: Node3D
@@ -27,13 +29,15 @@ var engine: AudioStreamPlayer3D
 var ambience: AudioStreamPlayer
 var step_sound: AudioStreamPlayer3D
 var step_timer := 0.0
-var drive_a := Vector3(0,0.65,-35)
-var drive_b := Vector3(0,0.65,14)
+var drive_a := Vector3(0,0.43,-35)
+var drive_b := Vector3(0,0.43,14)
 
 func _ready() -> void:
 	build_world()
 	var environment_v021: Node3D = EnvironmentV021.new()
 	add_child(environment_v021)
+	visuals_v022 = VisualsV022.new()
+	add_child(visuals_v022)
 	build_people_and_car()
 	build_player()
 	build_ui()
@@ -96,22 +100,28 @@ func build_world() -> void:
 	e.background_mode = Environment.BG_SKY
 	var sky := Sky.new()
 	var sm := ProceduralSkyMaterial.new()
-	sm.sky_top_color = Color("4b86c9")
-	sm.sky_horizon_color = Color("c9e4f1")
-	sm.ground_bottom_color = Color("47643e")
+	sm.sky_top_color = Color("3f83c8")
+	sm.sky_horizon_color = Color("d5edf7")
+	sm.ground_bottom_color = Color("496844")
+	sm.ground_horizon_color = Color("b8c895")
+	sm.sun_angle_max = 18.0
 	sky.sky_material = sm
 	e.sky = sky
 	e.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-	e.ambient_light_energy = 0.8
+	e.ambient_light_energy = 0.95
 	e.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	e.fog_enabled = true
-	e.fog_density = 0.003
+	e.fog_density = 0.0022
+	e.fog_light_color = Color("d8e9ed")
+	e.fog_light_energy = 0.65
 	we.environment = e
 	add_child(we)
 	var sun := DirectionalLight3D.new()
-	sun.rotation_degrees = Vector3(-48,-25,0)
-	sun.light_energy = 1.25
+	sun.rotation_degrees = Vector3(-52,-32,0)
+	sun.light_color = Color("fff2d1")
+	sun.light_energy = 1.18
 	sun.shadow_enabled = true
+	sun.directional_shadow_max_distance = 70.0
 	add_child(sun)
 
 func build_village() -> void:
@@ -180,9 +190,32 @@ func person(parent: Node, p: Vector3, cloth: Color, scale_v := 1.0) -> Node3D:
 	cylinder(n,Vector3(0.16,0.35,0),0.1,0.7,Color("383635"))
 	return n
 
+func build_grandma(p: Vector3) -> Node3D:
+	var n: Node3D = Node3D.new()
+	n.name = "Grandma_v0_2_2"
+	n.position = p
+	n.scale = Vector3.ONE * 0.92
+	add_child(n)
+	# Elderly body proportions and traditional warm clothing.
+	cylinder(n,Vector3(0,1.05,0),0.42,1.35,Color("d7cbb1"))
+	box(n,Vector3(0,1.08,0.06),Vector3(0.92,1.15,0.20),Color("8e657f"))
+	sphere(n,Vector3(0,2.02,0),0.36,Color("c99a78"))
+	# Grey hair cap + bun.
+	sphere(n,Vector3(0,2.22,0.05),0.34,Color("c9c7c0"))
+	sphere(n,Vector3(0.0,2.23,0.34),0.20,Color("b7b5af"))
+	# Arms and legs.
+	cylinder(n,Vector3(-0.46,1.12,0),0.10,0.92,Color("c99a78"))
+	cylinder(n,Vector3(0.46,1.12,0),0.10,0.92,Color("c99a78"))
+	cylinder(n,Vector3(-0.17,0.34,0),0.10,0.65,Color("4f4944"))
+	cylinder(n,Vector3(0.17,0.34,0),0.10,0.65,Color("4f4944"))
+	# Small shawl/sari accent so she reads clearly from the arrival camera.
+	var shawl: MeshInstance3D = box(n,Vector3(0.16,1.35,-0.24),Vector3(0.42,1.15,0.12),Color("7d5973"))
+	shawl.rotation_degrees.z = -10.0
+	return n
+
 func build_people_and_car() -> void:
 	car = Node3D.new()
-	car.name = "FamilyCar_v0_2_1"
+	car.name = "FamilyCar_v0_2_2"
 	car.position = drive_a
 	add_child(car)
 
@@ -232,12 +265,12 @@ func build_people_and_car() -> void:
 	person(family,Vector3(-2.2,0,16),Color("526d8b"))
 	person(family,Vector3(2.1,0,15.7),Color("9b617c"),0.95)
 	person(family,Vector3(3.4,0,16.6),Color("d19d44"),0.78)
-	grandma = person(self,Vector3(-1.3,0,22.9),Color("d6cdb1"),0.9)
-	box(grandma,Vector3(0,1.15,0.03),Vector3(0.9,1.2,0.16),Color("8f6481"))
+	grandma = build_grandma(Vector3(-3.1,0,20.6))
+	grandma.visible = true
 
 func build_player() -> void:
 	player = CharacterBody3D.new()
-	player.position = Vector3(0,1.1,18)
+	player.position = Vector3(0,1.05,17.4)
 	add_child(player)
 	var cs := CollisionShape3D.new()
 	var cap := CapsuleShape3D.new()
@@ -266,7 +299,7 @@ func build_ui() -> void:
 	objective = Label.new()
 	objective.position = Vector2(28,26)
 	objective.add_theme_font_size_override("font_size",22)
-	objective.text = "ගමට යන ගමන්...  •  v0.2.1"
+	objective.text = "ගමට යන ගමන්...  •  v0.2.2"
 	layer.add_child(objective)
 	dialogue = Label.new()
 	dialogue.position = Vector2(100,560)
@@ -354,11 +387,15 @@ func _process(delta: float) -> void:
 			state = GameState.ARRIVAL
 			clock = 0
 			family.visible = true
+			grandma.visible = true
 			engine.stop()
+			if visuals_v022 != null and visuals_v022.has_method("trigger_arrival_dust"):
+				visuals_v022.call("trigger_arrival_dust", car.global_position)
 			objective.text = "ආච්චිලාගේ ගෙදරට ආවා"
 	elif state == GameState.ARRIVAL:
-		cine_cam.global_position = Vector3(6,3.5,19)
-		cine_cam.look_at(Vector3(0,1.5,23),Vector3.UP)
+		grandma.visible = true
+		cine_cam.global_position = Vector3(7.5,4.2,16.8)
+		cine_cam.look_at(Vector3(-1.8,1.55,20.8),Vector3.UP)
 		if clock > 2.8:
 			state = GameState.DIALOGUE
 			clock = 0
