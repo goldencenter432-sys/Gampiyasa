@@ -62,8 +62,8 @@ func _mountain_ridge(center: Vector3, base_r: float, base_h: float, color: Color
 	]
 	for i: int in range(offsets.size()):
 		var off: Vector3 = offsets[i]
-		var height_mul: float = 0.72 + float((i * 3) % 5) * 0.10
-		var radius_mul: float = 0.78 + float(i % 3) * 0.08
+		var height_mul: float = 0.66 + float((i * 5 + 2) % 7) * 0.075
+		var radius_mul: float = 0.72 + float((i * 2 + 1) % 5) * 0.07
 		var peak: MeshInstance3D = _cone(
 			root,
 			Vector3(off.x * base_r * 0.72, base_h * height_mul * 0.48, off.z),
@@ -72,9 +72,9 @@ func _mountain_ridge(center: Vector3, base_r: float, base_h: float, color: Color
 			color,
 			6 + (i % 3)
 		)
-		peak.scale = Vector3(0.92 + float(i%2)*0.16, 1.0, depth_scale * (0.88 + float(i%3)*0.07))
-		peak.rotation_degrees.y = -12.0 + float(i)*4.7
-		peak.rotation_degrees.z = -3.0 + float((i*2)%5)*1.5
+		peak.scale = Vector3(0.82 + float((i*3)%5)*0.08, 1.0, depth_scale * (0.82 + float((i*4)%5)*0.06))
+		peak.rotation_degrees.y = -18.0 + float(i)*6.3
+		peak.rotation_degrees.z = -4.5 + float((i*3)%7)*1.3
 
 	# Low rounded foot-hills merge the pointed peaks into one ridge.
 	for j: int in range(4):
@@ -138,5 +138,5 @@ func _build_foreground_ridges() -> void:
 	# Darker low ridges add parallax and stop the horizon looking flat.
 	for i: int in range(10):
 		var x: float = -94.0 + float(i)*20.8
-		var ridge: MeshInstance3D = _cone(self, Vector3(x,8.0,106.0+float(i%2)*4.5), 15.0, 20.0+float(i%3)*3.0, Color("3e5c45"), 7)
+		var ridge: MeshInstance3D = _cone(self, Vector3(x,8.0,106.0+float(i%2)*4.5), 15.0, 20.0+float(i%3)*3.0, Color("465c4a"), 7)
 		ridge.scale.z = 0.70
