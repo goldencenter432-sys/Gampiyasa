@@ -207,6 +207,29 @@ func person(parent: Node, p: Vector3, cloth: Color, scale_v := 1.0) -> Node3D:
 	cylinder(n,Vector3(0.16,0.35,0),0.1,0.7,Color("383635"))
 	return n
 
+func build_child(parent: Node, p: Vector3, shirt: Color, scale_v: float = 1.0) -> Node3D:
+	var n: Node3D = Node3D.new()
+	n.position = p
+	n.scale = Vector3.ONE * scale_v
+	parent.add_child(n)
+	# More natural child silhouette: torso, head, arms, shorts and separated legs.
+	box(n,Vector3(0,1.20,0),Vector3(0.72,0.95,0.42),shirt)
+	sphere(n,Vector3(0,1.95,0),0.31,Color("d3a07d"))
+	# Hair cap.
+	var hair: MeshInstance3D = sphere(n,Vector3(0,2.12,0.02),0.30,Color("2b211c"))
+	hair.scale = Vector3(1.02,0.55,1.0)
+	# Arms.
+	cylinder(n,Vector3(-0.46,1.18,0),0.09,0.82,Color("d3a07d"))
+	cylinder(n,Vector3(0.46,1.18,0),0.09,0.82,Color("d3a07d"))
+	# Shorts + legs.
+	box(n,Vector3(0,0.70,0),Vector3(0.70,0.38,0.44),Color("3f4f67"))
+	cylinder(n,Vector3(-0.20,0.28,0),0.10,0.72,Color("b98568"))
+	cylinder(n,Vector3(0.20,0.28,0),0.10,0.72,Color("b98568"))
+	# Shoes.
+	box(n,Vector3(-0.20,-0.09,-0.06),Vector3(0.25,0.14,0.42),Color("2f2f2f"))
+	box(n,Vector3(0.20,-0.09,-0.06),Vector3(0.25,0.14,0.42),Color("2f2f2f"))
+	return n
+
 func build_grandma(p: Vector3) -> Node3D:
 	var n: Node3D = Node3D.new()
 	n.name = "Grandma_v0_2_5"
@@ -303,7 +326,7 @@ func build_people_and_car() -> void:
 	mother.name = "Mother"
 	daughter = person(family,Vector3(1.65,0,8.7),Color("d19d44"),0.78)
 	daughter.name = "Daughter"
-	cutscene_boy = person(family,Vector3(-1.55,0,8.7),Color("4b76a5"),0.72)
+	cutscene_boy = build_child(family,Vector3(-1.55,0,8.7),Color("4b76a5"),0.78)
 	cutscene_boy.name = "BoyCutscene"
 
 	grandma = build_grandma(Vector3(0.0,0,28.6))
@@ -319,14 +342,14 @@ func build_player() -> void:
 	cap.height = 1.55
 	cs.shape = cap
 	player.add_child(cs)
-	body_visual = person(player,Vector3(0,-0.95,0),Color("4b76a5"),0.72)
+	body_visual = build_child(player,Vector3(0,-0.98,0),Color("4b76a5"),0.78)
 	pivot = Node3D.new()
 	player.add_child(pivot)
 	pivot.position = Vector3(0,1.2,0)
 	play_cam = Camera3D.new()
-	play_cam.position = Vector3(0,1.55,4.6)
-	play_cam.rotation_degrees.x = -8.0
-	play_cam.fov = 72.0
+	play_cam.position = Vector3(0.55,1.45,3.85)
+	play_cam.rotation_degrees.x = -7.0
+	play_cam.fov = 70.0
 	pivot.add_child(play_cam)
 	cine_cam = Camera3D.new()
 	add_child(cine_cam)
@@ -342,7 +365,7 @@ func build_ui() -> void:
 	objective = Label.new()
 	objective.position = Vector2(28,26)
 	objective.add_theme_font_size_override("font_size",22)
-	objective.text = "ගමට යන ගමන්...  •  v0.2.5"
+	objective.text = "ගමට යන ගමන්...  •  v0.2.5.1"
 	layer.add_child(objective)
 	dialogue = Label.new()
 	dialogue.position = Vector2(100,560)
@@ -474,8 +497,8 @@ func _process(delta: float) -> void:
 			cine_cam.look_at(Vector3(0.0,2.0,22.0),Vector3.UP)
 
 		# 2.5-8.5 sec: open doors and animate family stepping out.
-		elif clock < 8.5:
-			var exit_t: float = clampf((clock-2.5)/6.0,0.0,1.0)
+		elif clock < 8.0:
+			var exit_t: float = clampf((clock-2.5)/5.5,0.0,1.0)
 			cine_cam.global_position = Vector3(7.2,3.0,5.0)
 			cine_cam.look_at(parked + Vector3(0,1.1,0.8),Vector3.UP)
 
@@ -487,25 +510,26 @@ func _process(delta: float) -> void:
 			if exit_t > 0.08:
 				father.visible = true
 				var ft: float = clampf((exit_t-0.08)/0.30,0.0,1.0)
-				father.global_position = parked + Vector3(-1.2,0.0,-0.9).lerp(Vector3(-2.5,0.0,-0.7),ft)
+				father.global_position = parked + Vector3(-1.2,0.10 + sin(ft*PI)*0.10,-0.9).lerp(Vector3(-2.5,0.0,-0.7),smoothstep(0.0,1.0,ft))
 			if exit_t > 0.20:
 				mother.visible = true
 				var mt: float = clampf((exit_t-0.20)/0.30,0.0,1.0)
-				mother.global_position = parked + Vector3(1.2,0.0,-0.8).lerp(Vector3(2.5,0.0,-0.5),mt)
+				mother.global_position = parked + Vector3(1.2,0.10 + sin(mt*PI)*0.10,-0.8).lerp(Vector3(2.5,0.0,-0.5),smoothstep(0.0,1.0,mt))
 			if exit_t > 0.36:
 				daughter.visible = true
 				var dt: float = clampf((exit_t-0.36)/0.28,0.0,1.0)
-				daughter.global_position = parked + Vector3(1.2,0.0,0.9).lerp(Vector3(2.8,0.0,1.2),dt)
+				daughter.global_position = parked + Vector3(1.2,0.08 + sin(dt*PI)*0.08,0.9).lerp(Vector3(2.8,0.0,1.2),smoothstep(0.0,1.0,dt))
 			if exit_t > 0.50:
 				cutscene_boy.visible = true
 				var bt: float = clampf((exit_t-0.50)/0.26,0.0,1.0)
-				cutscene_boy.global_position = parked + Vector3(-1.2,0.0,0.9).lerp(Vector3(-2.6,0.0,1.4),bt)
+				cutscene_boy.global_position = parked + Vector3(-1.2,0.08 + sin(bt*PI)*0.08,0.9).lerp(Vector3(-2.6,0.0,1.4),smoothstep(0.0,1.0,bt))
 				cutscene_boy.rotation_degrees.y = lerpf(0.0,-18.0,bt)
 
 		# 8.5-13 sec: grandma walks from inside to the veranda.
-		elif clock < 13.0:
-			var gt: float = clampf((clock-8.5)/4.5,0.0,1.0)
+		elif clock < 12.3:
+			var gt: float = clampf((clock-8.0)/4.3,0.0,1.0)
 			grandma.position = Vector3(0.0,0.0,28.6).lerp(Vector3(-2.2,0.0,20.7),smoothstep(0.0,1.0,gt))
+			grandma.position.y = sin(gt*PI*4.0)*0.035
 			grandma.rotation_degrees.y = lerpf(180.0,0.0,gt)
 			cine_cam.global_position = Vector3(-6.8,3.2,18.2)
 			cine_cam.look_at(grandma.global_position + Vector3(0,1.4,0),Vector3.UP)
@@ -516,7 +540,7 @@ func _process(delta: float) -> void:
 			cine_cam.global_position = Vector3(6.8,4.0,15.0)
 			cine_cam.look_at(Vector3(-0.5,1.5,20.0),Vector3.UP)
 
-		if clock > 16.0:
+		if clock > 15.0:
 			state = GameState.DIALOGUE
 			clock = 0.0
 			dialogue.visible = true
