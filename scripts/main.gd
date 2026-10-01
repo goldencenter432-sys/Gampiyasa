@@ -23,6 +23,8 @@ var car_door_fl: Node3D
 var car_door_fr: Node3D
 var car_door_rl: Node3D
 var car_door_rr: Node3D
+var front_door_left: Node3D
+var front_door_right: Node3D
 var player: CharacterBody3D
 var body_visual: Node3D
 var pivot: Node3D
@@ -51,6 +53,8 @@ func _ready() -> void:
 	build_world()
 	var environment_v021: Node3D = EnvironmentV021.new()
 	add_child(environment_v021)
+	front_door_left = environment_v021.find_child("FrontDoorLeft", true, false) as Node3D
+	front_door_right = environment_v021.find_child("FrontDoorRight", true, false) as Node3D
 	visuals_v022 = VisualsV022.new()
 	add_child(visuals_v022)
 	content_v024 = ContentV024.new()
@@ -592,15 +596,25 @@ func _process(delta: float) -> void:
 		# 8.5-13 sec: grandma walks from inside to the veranda.
 		elif clock < 12.3:
 			var gt: float = clampf((clock-8.0)/4.3,0.0,1.0)
-			grandma.position = Vector3(0.0,0.0,28.6).lerp(Vector3(-2.2,0.0,20.7),smoothstep(0.0,1.0,gt))
-			grandma.position.y = sin(gt*PI*4.0)*0.035
-			grandma.rotation_degrees.y = lerpf(180.0,0.0,gt)
-			grandma.rotation_degrees.z = sin(gt*TAU*2.0)*1.2
+			var door_t: float = clampf(gt/0.34,0.0,1.0)
+			if front_door_left != null:
+				front_door_left.rotation_degrees.y = lerpf(0.0,-42.0,smoothstep(0.0,1.0,door_t))
+			if front_door_right != null:
+				front_door_right.rotation_degrees.y = lerpf(0.0,42.0,smoothstep(0.0,1.0,door_t))
+			var walk_t: float = clampf((gt-0.18)/0.82,0.0,1.0)
+			grandma.position = Vector3(0.0,0.0,28.6).lerp(Vector3(-2.2,0.0,20.7),smoothstep(0.0,1.0,walk_t))
+			grandma.position.y = sin(walk_t*PI*4.0)*0.035
+			grandma.rotation_degrees.y = lerpf(180.0,0.0,walk_t)
+			grandma.rotation_degrees.z = sin(walk_t*TAU*2.0)*1.2
 			cine_cam.global_position = Vector3(-10.5,3.8,15.4)
 			cine_cam.look_at(grandma.global_position + Vector3(0,1.4,0),Vector3.UP)
 
 		# 13-16 sec: family + grandma hero shot before dialogue.
 		else:
+			if front_door_left != null:
+				front_door_left.rotation_degrees.y = -42.0
+			if front_door_right != null:
+				front_door_right.rotation_degrees.y = 42.0
 			grandma.position = Vector3(-2.2,0.0,20.7)
 			cine_cam.global_position = Vector3(9.5,4.6,13.2)
 			cine_cam.look_at(Vector3(-0.5,1.5,20.0),Vector3.UP)
@@ -681,37 +695,25 @@ func _physics_process(delta: float) -> void:
 	elif player.global_position.z > 30.3:
 		objective.text = "OBJECTIVE: Rooms, photos සහ kitchen එක explore කරන්න"
 
+func show_timed_dialogue(text_value: String, seconds: float) -> void:
+	dialogue_panel.visible = true
+	dialogue.visible = true
+	dialogue.text = text_value
+	await get_tree().create_timer(seconds).timeout
+	dialogue.visible = false
+	dialogue_panel.visible = false
+
 func on_interact() -> void:
 	if player.global_position.distance_to(grandma.global_position) < 3.2:
-		dialogue_panel.visible = true
-		dialogue.visible = true
-		dialogue.text = "ආච්චි: පුතා, ඇතුළට ගිහින් වටේ බලන්න. කෑමත් ලෑස්ති කරනවා."
-		await get_tree().create_timer(2.8).timeout
-		dialogue.visible = false
-	dialogue_panel.visible = false
+		await show_timed_dialogue("ආච්චි: පුතා, ඇතුළට ගිහින් වටේ බලන්න. කෑමත් ලෑස්ති කරනවා.",2.8)
 		return
 
 	var p: Vector3 = player.global_position
 	if p.z > 30.0 and p.x < -1.2:
-		dialogue_panel.visible = true
-		dialogue.visible = true
-		dialogue.text = "කොල්ලා: වාව්... මේ kitchen එක පරණ ගමේ kitchen එකක් වගේ!"
-		await get_tree().create_timer(2.6).timeout
-		dialogue.visible = false
-	dialogue_panel.visible = false
+		await show_timed_dialogue("කොල්ලා: වාව්... මේ kitchen එක පරණ ගමේ kitchen එකක් වගේ!",2.6)
 	elif p.z > 30.0 and p.x > 1.2:
-		dialogue_panel.visible = true
-		dialogue.visible = true
-		dialogue.text = "කොල්ලා: මේ room එකේ පරණ බඩු ගොඩක් තියෙනවා..."
-		await get_tree().create_timer(2.6).timeout
-		dialogue.visible = false
-	dialogue_panel.visible = false
+		await show_timed_dialogue("කොල්ලා: මේ room එකේ පරණ බඩු ගොඩක් තියෙනවා...",2.6)
 	elif p.z > 28.5:
-		dialogue_panel.visible = true
-		dialogue.visible = true
-		dialogue.text = "කොල්ලා: මේ photos වල ඉන්නේ අපේ පරණ අය වෙන්න ඇති..."
-		await get_tree().create_timer(2.6).timeout
-		dialogue.visible = false
-	dialogue_panel.visible = false
+		await show_timed_dialogue("කොල්ලා: මේ photos වල ඉන්නේ අපේ පරණ අය වෙන්න ඇති...",2.6)
 	else:
 		objective.text = "වලව්ව ඇතුළට ගිහින් rooms explore කරන්න"
