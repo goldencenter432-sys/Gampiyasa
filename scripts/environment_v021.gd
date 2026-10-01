@@ -207,7 +207,7 @@ func _build_fences_and_poles() -> void:
 
 func _build_walawwa() -> void:
 	var h: Node3D = Node3D.new()
-	h.name = "Walawwa_v0_2_1"
+	h.name = "Walawwa_v0_2_3"
 	self.add_child(h)
 	# Foundation and timber floor.
 	_box(h, Vector3(0, 0.18, 30.0), Vector3(19.0, 0.36, 16.0), stone, true)
@@ -218,34 +218,56 @@ func _build_walawwa() -> void:
 	_box(h, Vector3(0, 4.35, 37.2), Vector3(13.0, 1.2, 0.45), plaster, true)
 	_box(h, Vector3(-8.8, 2.6, 30.0), Vector3(0.45, 4.7, 14.5), plaster, true)
 	_box(h, Vector3(8.8, 2.6, 30.0), Vector3(0.45, 4.7, 14.5), plaster, true)
-	_box(h, Vector3(0, 2.6, 22.8), Vector3(17.8, 4.7, 0.45), plaster, true)
+	# Front facade leaves a real walk-through doorway instead of a solid collider wall.
+	_box(h, Vector3(-5.75, 2.6, 22.8), Vector3(6.3, 4.7, 0.45), plaster, true)
+	_box(h, Vector3(5.75, 2.6, 22.8), Vector3(6.3, 4.7, 0.45), plaster, true)
+	_box(h, Vector3(0, 4.45, 22.8), Vector3(5.2, 1.0, 0.45), plaster, true)
 	# Deep front veranda, columns, and timber railing.
 	_box(h, Vector3(0, 0.40, 20.8), Vector3(20.5, 0.32, 4.2), stone, true)
 	for x in [-8.2, -5.4, -2.7, 2.7, 5.4, 8.2]:
 		_cylinder(h, Vector3(x, 2.65, 20.2), 0.20, 4.5, wood_dark, 8)
 		_box(h, Vector3(x, 4.75, 20.2), Vector3(0.35, 0.28, 0.35), Color("c9b08a"), false)
 	_box(h, Vector3(0, 4.7, 20.2), Vector3(18.4, 0.30, 0.35), wood_dark, false)
-	# Roof: two broad sloped tile planes.
-	var left_roof: MeshInstance3D = _box(h, Vector3(-4.6, 5.85, 29.7), Vector3(10.5, 0.36, 18.8), tile_red, false)
-	left_roof.rotation_degrees.z = -17.5
-	var right_roof: MeshInstance3D = _box(h, Vector3(4.6, 5.85, 29.7), Vector3(10.5, 0.36, 18.8), Color("964536"), false)
-	right_roof.rotation_degrees.z = 17.5
+	# v0.2.3 corrected gable roof: both halves rise toward the central ridge.
+	var left_roof: MeshInstance3D = _box(h, Vector3(-4.65, 5.82, 29.7), Vector3(10.3, 0.34, 19.2), tile_red, false)
+	left_roof.rotation_degrees.z = 12.0
+	var right_roof: MeshInstance3D = _box(h, Vector3(4.65, 5.82, 29.7), Vector3(10.3, 0.34, 19.2), Color("994737"), false)
+	right_roof.rotation_degrees.z = -12.0
+	# Dark ridge cap and fascia give the roof a finished old-walawwa silhouette.
+	_box(h, Vector3(0.0, 6.83, 29.7), Vector3(0.42, 0.38, 19.6), wood_dark, false)
+	_box(h, Vector3(-9.55, 4.78, 29.7), Vector3(0.28, 0.28, 19.5), wood_dark, false)
+	_box(h, Vector3(9.55, 4.78, 29.7), Vector3(0.28, 0.28, 19.5), wood_dark, false)
+	# Tile rhythm strips make the roof read less like a single flat slab.
+	for z in [21.6, 24.8, 28.0, 31.2, 34.4, 37.6]:
+		var tile_l: MeshInstance3D = _box(h, Vector3(-4.65, 5.85, z), Vector3(10.15, 0.06, 0.12), Color("7f392e"), false)
+		tile_l.rotation_degrees.z = 12.0
+		var tile_r: MeshInstance3D = _box(h, Vector3(4.65, 5.85, z), Vector3(10.15, 0.06, 0.12), Color("843a2f"), false)
+		tile_r.rotation_degrees.z = -12.0
 	# Timber beams under roof.
 	for z in [24.0, 28.0, 32.0, 36.0]:
-		_box(h, Vector3(0, 4.45, z), Vector3(17.2, 0.22, 0.22), wood_dark, false)
-	# Front entrance frame and open double doors.
-	_box(h, Vector3(-2.4, 2.5, 22.55), Vector3(0.32, 4.0, 0.30), wood_dark, false)
-	_box(h, Vector3(2.4, 2.5, 22.55), Vector3(0.32, 4.0, 0.30), wood_dark, false)
-	_box(h, Vector3(0, 4.4, 22.55), Vector3(5.1, 0.32, 0.30), wood_dark, false)
-	var door_l: MeshInstance3D = _box(h, Vector3(-2.85, 2.25, 23.1), Vector3(2.0, 3.7, 0.18), wood_mid, false)
-	door_l.rotation_degrees.y = -52.0
-	var door_r: MeshInstance3D = _box(h, Vector3(2.85, 2.25, 23.1), Vector3(2.0, 3.7, 0.18), wood_mid, false)
-	door_r.rotation_degrees.y = 52.0
-	# Windows with wooden frames.
-	for x in [-6.2, 6.2]:
-		_box(h, Vector3(x, 2.7, 22.5), Vector3(3.2, 2.3, 0.20), Color("3b5050"), false)
-		_box(h, Vector3(x, 2.7, 22.35), Vector3(3.5, 0.18, 0.18), wood_dark, false)
-		_box(h, Vector3(x, 2.7, 22.35), Vector3(0.18, 2.6, 0.18), wood_dark, false)
+		_box(h, Vector3(0, 4.55, z), Vector3(17.2, 0.22, 0.22), wood_dark, false)
+	# Front entrance frame and carved-looking double timber doors.
+	_box(h, Vector3(-2.35, 2.5, 22.52), Vector3(0.34, 4.15, 0.34), wood_dark, false)
+	_box(h, Vector3(2.35, 2.5, 22.52), Vector3(0.34, 4.15, 0.34), wood_dark, false)
+	_box(h, Vector3(0, 4.48, 22.52), Vector3(5.05, 0.34, 0.34), wood_dark, false)
+	var door_l: MeshInstance3D = _box(h, Vector3(-2.72, 2.32, 23.05), Vector3(2.08, 3.72, 0.22), wood_mid, false)
+	door_l.rotation_degrees.y = -38.0
+	var door_r: MeshInstance3D = _box(h, Vector3(2.72, 2.32, 23.05), Vector3(2.08, 3.72, 0.22), wood_mid, false)
+	door_r.rotation_degrees.y = 38.0
+	for y in [1.25, 2.25, 3.25]:
+		_box(door_l, Vector3(0, y-2.32, -0.13), Vector3(1.45, 0.10, 0.05), Color("4c2d1f"), false)
+		_box(door_r, Vector3(0, y-2.32, -0.13), Vector3(1.45, 0.10, 0.05), Color("4c2d1f"), false)
+	_sphere(h, Vector3(-1.95, 2.28, 21.92), 0.08, Color("c8a85d"))
+	_sphere(h, Vector3(1.95, 2.28, 21.92), 0.08, Color("c8a85d"))
+	# Framed front windows with crossbars and timber shutters.
+	for x in [-6.25, 6.25]:
+		_box(h, Vector3(x, 2.72, 22.48), Vector3(2.75, 2.15, 0.16), Color("496a71"), false)
+		_box(h, Vector3(x, 2.72, 22.34), Vector3(3.10, 0.18, 0.20), wood_dark, false)
+		_box(h, Vector3(x, 2.72, 22.34), Vector3(0.18, 2.48, 0.20), wood_dark, false)
+		_box(h, Vector3(x, 1.55, 22.34), Vector3(3.10, 0.18, 0.20), wood_dark, false)
+		_box(h, Vector3(x, 3.89, 22.34), Vector3(3.10, 0.18, 0.20), wood_dark, false)
+		_box(h, Vector3(x-1.72, 2.72, 22.28), Vector3(0.78, 2.35, 0.16), wood_mid, false)
+		_box(h, Vector3(x+1.72, 2.72, 22.28), Vector3(0.78, 2.35, 0.16), wood_mid, false)
 	# Main hall furniture.
 	_box(h, Vector3(-4.8, 1.0, 30.0), Vector3(4.2, 0.55, 1.5), wood_mid, true)
 	_box(h, Vector3(-4.8, 1.9, 30.7), Vector3(4.2, 1.5, 0.35), wood_dark, false)
