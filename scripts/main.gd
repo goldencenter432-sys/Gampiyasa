@@ -347,7 +347,7 @@ func animate_grandma_welcome(amount: float) -> void:
 
 func update_third_person_camera() -> void:
 	var inside_house: bool = player.global_position.z > 22.0
-	var desired_local: Vector3 = Vector3(0.42,1.28,2.05) if inside_house else Vector3(0.52,1.42,3.45)
+	var desired_local: Vector3 = Vector3(0.34,1.22,1.82) if inside_house else Vector3(0.50,1.40,3.30)
 	var origin: Vector3 = pivot.global_position + Vector3(0.0,0.48,0.0)
 	var desired_global: Vector3 = pivot.to_global(desired_local)
 	var target_global: Vector3 = desired_global
@@ -367,7 +367,7 @@ func update_third_person_camera() -> void:
 				nearest_distance = hit_distance
 				var safe_dir: Vector3 = (origin-hit_pos).normalized()
 				target_global = hit_pos + safe_dir * (0.46 if inside_house else 0.36)
-	var min_distance: float = 1.15 if inside_house else 1.55
+	var min_distance: float = 0.95 if inside_house else 1.45
 	var from_origin: Vector3 = target_global-origin
 	if from_origin.length() < min_distance:
 		target_global = origin + from_origin.normalized()*min_distance if from_origin.length() > 0.01 else origin+Vector3(0,0,1)*min_distance
@@ -423,9 +423,15 @@ func build_people_and_car() -> void:
 
 	# More detailed classic family car silhouette.
 	box(car, Vector3(0,0.62,0), Vector3(2.50,0.66,4.65), body_color)
-	box(car, Vector3(0,0.98,-1.55), Vector3(2.35,0.36,1.45), body_light)
-	box(car, Vector3(0,1.15,1.50), Vector3(2.30,0.42,1.20), body_color)
-	box(car, Vector3(0,1.42,0.05), Vector3(2.05,0.88,2.25), body_light)
+	var hood: MeshInstance3D = box(car, Vector3(0,0.98,-1.55), Vector3(2.35,0.36,1.45), body_light)
+	hood.rotation_degrees.x = 4.0
+	var trunk: MeshInstance3D = box(car, Vector3(0,1.10,1.52), Vector3(2.30,0.36,1.15), body_color)
+	trunk.rotation_degrees.x = -3.0
+	var cabin: MeshInstance3D = box(car, Vector3(0,1.42,0.05), Vector3(2.05,0.88,2.25), body_light)
+	cabin.scale.x = 0.96
+	box(car,Vector3(0,1.92,0.05),Vector3(1.90,0.12,1.95),body_color.lightened(0.04))
+	box(car,Vector3(0,0.38,-2.22),Vector3(2.20,0.12,0.30),Color("1e2427"))
+	box(car,Vector3(0,0.38,2.22),Vector3(2.20,0.12,0.30),Color("1e2427"))
 
 	var windshield: MeshInstance3D = box(car, Vector3(0,1.62,-1.05), Vector3(1.84,0.64,0.10), glass)
 	windshield.rotation_degrees.x = -16.0
@@ -438,6 +444,10 @@ func build_people_and_car() -> void:
 	box(car, Vector3(0,0.55,-2.38), Vector3(2.58,0.15,0.16), chrome)
 	box(car, Vector3(0,0.55,2.38), Vector3(2.58,0.15,0.16), chrome)
 	box(car, Vector3(0,0.82,-2.36), Vector3(1.10,0.32,0.09), Color("22272a"))
+	box(car,Vector3(0,0.52,-2.47),Vector3(0.72,0.24,0.06),Color("d9d7cf"))
+	box(car,Vector3(0,0.52,2.47),Vector3(0.72,0.24,0.06),Color("d9d7cf"))
+	box(car,Vector3(-1.23,0.88,0),Vector3(0.05,0.06,3.75),chrome)
+	box(car,Vector3(1.23,0.88,0),Vector3(0.05,0.06,3.75),chrome)
 	sphere(car, Vector3(-0.78,0.86,-2.34), 0.18, Color("f1e2b3"))
 	sphere(car, Vector3(0.78,0.86,-2.34), 0.18, Color("f1e2b3"))
 	sphere(car, Vector3(-0.82,0.84,2.34), 0.15, Color("9f342e"))
@@ -834,13 +844,15 @@ func _physics_process(delta: float) -> void:
 	player.move_and_slide()
 	if d.length() > 0.1:
 		body_visual.rotation.y = lerp_angle(body_visual.rotation.y,atan2(d.x,d.z),delta*8)
-		animate_walk_pose(body_visual,Time.get_ticks_msec()*0.012,0.75,true)
+		body_visual.rotation_degrees.x = lerpf(body_visual.rotation_degrees.x,-2.2,delta*4.0)
+		animate_walk_pose(body_visual,Time.get_ticks_msec()*0.012,0.72,true)
 		step_timer -= delta
 		if step_timer <= 0 and player.is_on_floor():
 			step_sound.pitch_scale = randf_range(0.92,1.06)
 			step_sound.play()
 			step_timer = 0.43
 	else:
+		body_visual.rotation_degrees.x = lerpf(body_visual.rotation_degrees.x,0.0,delta*5.0)
 		animate_walk_pose(body_visual,0.0,0.0,true)
 		step_timer = 0
 	if player.global_position.z > 24.6 and player.global_position.z <= 30.3:
