@@ -44,6 +44,8 @@ var objective_panel: ColorRect
 var jump_btn: Button
 var interact_btn: Button
 var skip_btn: Button
+var audio_status: Label
+var audio_status_timer: float = 5.0
 var yaw := 0.0
 var pitch := -0.15
 var jump_request := false
@@ -214,21 +216,51 @@ func build_house() -> void:
 		light.omni_range = 7
 		h.add_child(light)
 
+func joint_segment(parent: Node3D, node_name: String, p: Vector3, radius: float, length: float, color: Color) -> Node3D:
+	var joint: Node3D = Node3D.new()
+	joint.name = node_name
+	joint.position = p
+	parent.add_child(joint)
+	var segment: MeshInstance3D = cylinder(joint,Vector3(0,-length*0.5,0),radius,length,color)
+	segment.name = node_name + "_Mesh"
+	return joint
+
 func person(parent: Node, p: Vector3, cloth: Color, scale_v := 1.0) -> Node3D:
-	var n := Node3D.new()
+	var n: Node3D = Node3D.new()
 	n.position = p
 	n.scale = Vector3.ONE * scale_v
 	parent.add_child(n)
-	cylinder(n,Vector3(0,1.15,0),0.38,1.45,cloth)
-	sphere(n,Vector3(0,2.1,0),0.34,Color("d3a07d"))
-	var hair: MeshInstance3D = sphere(n,Vector3(0,2.28,0.03),0.33,Color("2d241f"))
-	hair.scale = Vector3(1.0,0.48,1.0)
-	sphere(n,Vector3(-0.10,2.10,-0.31),0.032,Color("1f1d1c"))
-	sphere(n,Vector3(0.10,2.10,-0.31),0.032,Color("1f1d1c"))
-	cylinder(n,Vector3(-0.16,0.35,0),0.1,0.7,Color("383635"))
-	cylinder(n,Vector3(0.16,0.35,0),0.1,0.7,Color("383635"))
-	cylinder(n,Vector3(-0.48,1.18,0),0.09,0.82,Color("d3a07d"))
-	cylinder(n,Vector3(0.48,1.18,0),0.09,0.82,Color("d3a07d"))
+	var rig: Node3D = Node3D.new()
+	rig.name = "RigRoot"
+	n.add_child(rig)
+
+	# Layered body proportions with joint pivots so animation bends from shoulders/hips.
+	var pelvis: MeshInstance3D = box(rig,Vector3(0,0.72,0),Vector3(0.66,0.34,0.40),cloth.darkened(0.12))
+	pelvis.name = "Pelvis"
+	var torso: MeshInstance3D = cylinder(rig,Vector3(0,1.35,0),0.38,1.10,cloth)
+	torso.name = "Torso"
+	torso.scale = Vector3(1.0,1.0,0.72)
+	cylinder(rig,Vector3(0,1.92,0),0.105,0.20,Color("c58f70"))
+	var head: MeshInstance3D = sphere(rig,Vector3(0,2.20,0),0.35,Color("c58f70"))
+	head.scale = Vector3(0.92,1.06,0.92)
+	var hair: MeshInstance3D = sphere(rig,Vector3(0,2.39,0.04),0.34,Color("29211d"))
+	hair.scale = Vector3(0.98,0.47,0.98)
+	sphere(rig,Vector3(-0.105,2.22,-0.31),0.030,Color("1b1918"))
+	sphere(rig,Vector3(0.105,2.22,-0.31),0.030,Color("1b1918"))
+	var nose: MeshInstance3D = sphere(rig,Vector3(0,2.12,-0.335),0.045,Color("bd8468"))
+	nose.scale = Vector3(0.75,1.05,0.65)
+	box(rig,Vector3(0,2.02,-0.335),Vector3(0.15,0.025,0.02),Color("85514d"))
+
+	for side_i: int in range(2):
+		var side: float = -1.0 if side_i == 0 else 1.0
+		var suffix: String = "L" if side_i == 0 else "R"
+		var upper_arm: Node3D = joint_segment(rig,"UpperArm"+suffix,Vector3(0.47*side,1.72,0),0.095,0.48,cloth)
+		var lower_arm: Node3D = joint_segment(upper_arm,"LowerArm"+suffix,Vector3(0,-0.47,0),0.082,0.44,Color("c58f70"))
+		sphere(lower_arm,Vector3(0,-0.48,0),0.105,Color("c58f70"))
+		var thigh: Node3D = joint_segment(rig,"Thigh"+suffix,Vector3(0.18*side,0.64,0),0.115,0.52,Color("3c3a38"))
+		var calf: Node3D = joint_segment(thigh,"Calf"+suffix,Vector3(0,-0.50,0),0.095,0.47,Color("4a4743"))
+		var shoe: MeshInstance3D = box(calf,Vector3(0,-0.50,-0.08),Vector3(0.25,0.15,0.40),Color("282828"))
+		shoe.name = "Shoe"+suffix
 	return n
 
 func build_child(parent: Node, p: Vector3, shirt: Color, scale_v: float = 1.0) -> Node3D:
@@ -236,56 +268,82 @@ func build_child(parent: Node, p: Vector3, shirt: Color, scale_v: float = 1.0) -
 	n.position = p
 	n.scale = Vector3.ONE * scale_v
 	parent.add_child(n)
-	# More natural child silhouette: torso, head, arms, shorts and separated legs.
-	box(n,Vector3(0,1.20,0),Vector3(0.72,0.95,0.42),shirt)
-	sphere(n,Vector3(0,1.95,0),0.31,Color("d3a07d"))
-	# Hair cap and simple facial hints.
-	var hair: MeshInstance3D = sphere(n,Vector3(0,2.12,0.02),0.30,Color("2b211c"))
-	hair.scale = Vector3(1.02,0.55,1.0)
-	sphere(n,Vector3(-0.10,1.99,-0.29),0.035,Color("1f1d1c"))
-	sphere(n,Vector3(0.10,1.99,-0.29),0.035,Color("1f1d1c"))
-	box(n,Vector3(0,1.86,-0.31),Vector3(0.18,0.035,0.025),Color("8f5c55"))
-	# Arms.
-	cylinder(n,Vector3(-0.46,1.18,0),0.09,0.82,Color("d3a07d"))
-	cylinder(n,Vector3(0.46,1.18,0),0.09,0.82,Color("d3a07d"))
-	# Shorts + legs.
-	box(n,Vector3(0,0.70,0),Vector3(0.70,0.38,0.44),Color("3f4f67"))
-	cylinder(n,Vector3(-0.20,0.28,0),0.10,0.72,Color("b98568"))
-	cylinder(n,Vector3(0.20,0.28,0),0.10,0.72,Color("b98568"))
-	# Shoes.
-	box(n,Vector3(-0.20,-0.09,-0.06),Vector3(0.25,0.14,0.42),Color("2f2f2f"))
-	box(n,Vector3(0.20,-0.09,-0.06),Vector3(0.25,0.14,0.42),Color("2f2f2f"))
+	var rig: Node3D = Node3D.new()
+	rig.name = "RigRoot"
+	n.add_child(rig)
+
+	var torso: MeshInstance3D = box(rig,Vector3(0,1.24,0),Vector3(0.62,0.82,0.36),shirt)
+	torso.name = "Torso"
+	box(rig,Vector3(0,0.76,0),Vector3(0.64,0.34,0.38),Color("3c4b62"))
+	cylinder(rig,Vector3(0,1.69,0),0.085,0.15,Color("c58f70"))
+	var head: MeshInstance3D = sphere(rig,Vector3(0,1.94,0),0.30,Color("c58f70"))
+	head.scale = Vector3(0.94,1.08,0.94)
+	var hair: MeshInstance3D = sphere(rig,Vector3(0,2.11,0.03),0.30,Color("29211d"))
+	hair.scale = Vector3(1.0,0.48,1.0)
+	sphere(rig,Vector3(-0.09,1.96,-0.27),0.030,Color("1b1918"))
+	sphere(rig,Vector3(0.09,1.96,-0.27),0.030,Color("1b1918"))
+	var nose: MeshInstance3D = sphere(rig,Vector3(0,1.88,-0.292),0.040,Color("bd8468"))
+	nose.scale = Vector3(0.72,1.0,0.62)
+	box(rig,Vector3(0,1.79,-0.296),Vector3(0.14,0.024,0.018),Color("87524e"))
+
+	for side_i: int in range(2):
+		var side: float = -1.0 if side_i == 0 else 1.0
+		var suffix: String = "L" if side_i == 0 else "R"
+		var upper_arm: Node3D = joint_segment(rig,"UpperArm"+suffix,Vector3(0.38*side,1.50,0),0.078,0.39,shirt)
+		var lower_arm: Node3D = joint_segment(upper_arm,"LowerArm"+suffix,Vector3(0,-0.38,0),0.065,0.34,Color("c58f70"))
+		sphere(lower_arm,Vector3(0,-0.37,0),0.080,Color("c58f70"))
+		var thigh: Node3D = joint_segment(rig,"Thigh"+suffix,Vector3(0.17*side,0.62,0),0.090,0.40,Color("b98568"))
+		var calf: Node3D = joint_segment(thigh,"Calf"+suffix,Vector3(0,-0.38,0),0.075,0.37,Color("b98568"))
+		box(calf,Vector3(0,-0.40,-0.07),Vector3(0.22,0.13,0.34),Color("2f2f2f"))
 	return n
 
 func animate_walk_pose(n: Node3D, phase: float, amount: float, child_model: bool = false) -> void:
-	var swing: float = sin(phase) * 26.0 * amount
-	if child_model:
-		if n.get_child_count() >= 8:
-			var arm_l: Node3D = n.get_child(3) as Node3D
-			var arm_r: Node3D = n.get_child(4) as Node3D
-			var leg_l: Node3D = n.get_child(6) as Node3D
-			var leg_r: Node3D = n.get_child(7) as Node3D
-			arm_l.rotation_degrees.x = swing
-			arm_r.rotation_degrees.x = -swing
-			leg_l.rotation_degrees.x = -swing * 0.65
-			leg_r.rotation_degrees.x = swing * 0.65
-	else:
-		if n.get_child_count() >= 6:
-			var leg_l: Node3D = n.get_child(2) as Node3D
-			var leg_r: Node3D = n.get_child(3) as Node3D
-			var arm_l: Node3D = n.get_child(4) as Node3D
-			var arm_r: Node3D = n.get_child(5) as Node3D
-			leg_l.rotation_degrees.x = -swing * 0.65
-			leg_r.rotation_degrees.x = swing * 0.65
-			arm_l.rotation_degrees.x = swing
-			arm_r.rotation_degrees.x = -swing
+	var rig: Node3D = n.find_child("RigRoot",true,false) as Node3D
+	if rig == null:
+		return
+	var swing: float = sin(phase) * (22.0 if child_model else 18.0) * amount
+	var knee_bend_l: float = maxf(0.0,sin(phase))*24.0*amount
+	var knee_bend_r: float = maxf(0.0,-sin(phase))*24.0*amount
+	var arm_l: Node3D = n.find_child("UpperArmL",true,false) as Node3D
+	var arm_r: Node3D = n.find_child("UpperArmR",true,false) as Node3D
+	var fore_l: Node3D = n.find_child("LowerArmL",true,false) as Node3D
+	var fore_r: Node3D = n.find_child("LowerArmR",true,false) as Node3D
+	var thigh_l: Node3D = n.find_child("ThighL",true,false) as Node3D
+	var thigh_r: Node3D = n.find_child("ThighR",true,false) as Node3D
+	var calf_l: Node3D = n.find_child("CalfL",true,false) as Node3D
+	var calf_r: Node3D = n.find_child("CalfR",true,false) as Node3D
+	if arm_l != null:
+		arm_l.rotation_degrees.x = swing
+	if arm_r != null:
+		arm_r.rotation_degrees.x = -swing
+	if fore_l != null:
+		fore_l.rotation_degrees.x = -8.0*amount + maxf(0.0,-sin(phase))*12.0*amount
+	if fore_r != null:
+		fore_r.rotation_degrees.x = -8.0*amount + maxf(0.0,sin(phase))*12.0*amount
+	if thigh_l != null:
+		thigh_l.rotation_degrees.x = -swing*0.70
+	if thigh_r != null:
+		thigh_r.rotation_degrees.x = swing*0.70
+	if calf_l != null:
+		calf_l.rotation_degrees.x = knee_bend_l
+	if calf_r != null:
+		calf_r.rotation_degrees.x = knee_bend_r
+	rig.position.y = absf(sin(phase))*0.025*amount
+	rig.rotation_degrees.z = sin(phase*0.5)*1.2*amount
+	if amount <= 0.001:
+		rig.position.y = 0.0
+		rig.rotation_degrees = Vector3.ZERO
 
 func animate_grandma_welcome(amount: float) -> void:
-	if grandma == null or grandma.get_child_count() < 7:
+	if grandma == null:
 		return
-	var arm_r: Node3D = grandma.get_child(6) as Node3D
-	arm_r.rotation_degrees.z = lerpf(0.0,-38.0,amount)
-	arm_r.rotation_degrees.x = sin(amount*PI)*18.0
+	var arm_r: Node3D = grandma.find_child("UpperArmR",true,false) as Node3D
+	var fore_r: Node3D = grandma.find_child("LowerArmR",true,false) as Node3D
+	if arm_r != null:
+		arm_r.rotation_degrees.z = lerpf(0.0,-42.0,amount)
+		arm_r.rotation_degrees.x = lerpf(0.0,16.0,amount)
+	if fore_r != null:
+		fore_r.rotation_degrees.x = lerpf(0.0,-28.0,amount)
 
 func update_third_person_camera() -> void:
 	var inside_house: bool = player.global_position.z > 22.0
@@ -318,28 +376,38 @@ func update_third_person_camera() -> void:
 
 func build_grandma(p: Vector3) -> Node3D:
 	var n: Node3D = Node3D.new()
-	n.name = "Grandma_v0_2_5"
+	n.name = "Grandma_v0_2_6_1"
 	n.position = p
 	n.scale = Vector3.ONE * 0.92
 	add_child(n)
-	# Elderly body proportions and traditional warm clothing.
-	cylinder(n,Vector3(0,1.05,0),0.42,1.35,Color("d7cbb1"))
-	box(n,Vector3(0,1.08,0.06),Vector3(0.92,1.15,0.20),Color("8e657f"))
-	sphere(n,Vector3(0,2.02,0),0.36,Color("c99a78"))
-	sphere(n,Vector3(-0.10,2.03,-0.33),0.032,Color("2a2420"))
-	sphere(n,Vector3(0.10,2.03,-0.33),0.032,Color("2a2420"))
-	box(n,Vector3(0,1.90,-0.34),Vector3(0.16,0.03,0.025),Color("8a5850"))
-	# Grey hair cap + bun.
-	sphere(n,Vector3(0,2.22,0.05),0.34,Color("c9c7c0"))
-	sphere(n,Vector3(0.0,2.23,0.34),0.20,Color("b7b5af"))
-	# Arms and legs.
-	cylinder(n,Vector3(-0.46,1.12,0),0.10,0.92,Color("c99a78"))
-	cylinder(n,Vector3(0.46,1.12,0),0.10,0.92,Color("c99a78"))
-	cylinder(n,Vector3(-0.17,0.34,0),0.10,0.65,Color("4f4944"))
-	cylinder(n,Vector3(0.17,0.34,0),0.10,0.65,Color("4f4944"))
-	# Small shawl/sari accent so she reads clearly from the arrival camera.
-	var shawl: MeshInstance3D = box(n,Vector3(0.16,1.35,-0.24),Vector3(0.42,1.15,0.12),Color("7d5973"))
-	shawl.rotation_degrees.z = -10.0
+	var rig: Node3D = Node3D.new()
+	rig.name = "RigRoot"
+	n.add_child(rig)
+	var torso: MeshInstance3D = cylinder(rig,Vector3(0,1.25,0),0.42,1.15,Color("d7cbb1"))
+	torso.scale = Vector3(1.04,1.0,0.78)
+	box(rig,Vector3(0.10,1.26,-0.15),Vector3(0.78,1.02,0.18),Color("8e657f"))
+	cylinder(rig,Vector3(0,1.85,0),0.095,0.16,Color("bd876c"))
+	var head: MeshInstance3D = sphere(rig,Vector3(0,2.08,0),0.35,Color("bd876c"))
+	head.scale = Vector3(0.96,1.05,0.96)
+	sphere(rig,Vector3(-0.10,2.10,-0.32),0.030,Color("27221f"))
+	sphere(rig,Vector3(0.10,2.10,-0.32),0.030,Color("27221f"))
+	var nose: MeshInstance3D = sphere(rig,Vector3(0,2.00,-0.345),0.046,Color("b27b63"))
+	nose.scale = Vector3(0.72,1.08,0.62)
+	box(rig,Vector3(0,1.91,-0.35),Vector3(0.15,0.025,0.02),Color("7f4f4a"))
+	var hair: MeshInstance3D = sphere(rig,Vector3(0,2.29,0.05),0.34,Color("bebbb4"))
+	hair.scale = Vector3(1.0,0.50,1.0)
+	sphere(rig,Vector3(0.0,2.30,0.34),0.18,Color("aaa7a2"))
+	for side_i: int in range(2):
+		var side: float = -1.0 if side_i == 0 else 1.0
+		var suffix: String = "L" if side_i == 0 else "R"
+		var upper_arm: Node3D = joint_segment(rig,"UpperArm"+suffix,Vector3(0.47*side,1.58,0),0.09,0.44,Color("8e657f"))
+		var lower_arm: Node3D = joint_segment(upper_arm,"LowerArm"+suffix,Vector3(0,-0.42,0),0.075,0.39,Color("bd876c"))
+		sphere(lower_arm,Vector3(0,-0.42,0),0.09,Color("bd876c"))
+		var thigh: Node3D = joint_segment(rig,"Thigh"+suffix,Vector3(0.17*side,0.72,0),0.10,0.42,Color("514b46"))
+		var calf: Node3D = joint_segment(thigh,"Calf"+suffix,Vector3(0,-0.40,0),0.085,0.39,Color("4f4944"))
+		box(calf,Vector3(0,-0.42,-0.06),Vector3(0.23,0.13,0.34),Color("2d2b2a"))
+	var shawl: MeshInstance3D = box(rig,Vector3(0.17,1.40,-0.25),Vector3(0.40,1.05,0.10),Color("76556d"))
+	shawl.rotation_degrees.z = -11.0
 	return n
 
 func build_people_and_car() -> void:
@@ -461,7 +529,7 @@ func build_ui() -> void:
 	objective.size = Vector2(585,36)
 	objective.add_theme_font_size_override("font_size",21)
 	objective.add_theme_color_override("font_color",Color("fff4df"))
-	objective.text = "ගමට යන ගමන්...  •  v0.2.6"
+	objective.text = "ගමට යන ගමන්...  •  v0.2.6.1"
 	layer.add_child(objective)
 
 	dialogue_panel = ColorRect.new()
@@ -504,6 +572,14 @@ func build_ui() -> void:
 	skip_btn.size = Vector2(110,55)
 	skip_btn.pressed.connect(begin_play)
 	layer.add_child(skip_btn)
+	audio_status = Label.new()
+	audio_status.position = Vector2(1005,100)
+	audio_status.size = Vector2(235,40)
+	audio_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	audio_status.add_theme_font_size_override("font_size",18)
+	audio_status.add_theme_color_override("font_color",Color("d8ffd8"))
+	audio_status.text = "AUDIO: ON  •  v0.2.6.1"
+	layer.add_child(audio_status)
 
 func make_wav(freq: float, seconds: float, noise := false) -> AudioStreamWAV:
 	var rate := 22050
@@ -525,13 +601,16 @@ func make_wav(freq: float, seconds: float, noise := false) -> AudioStreamWAV:
 	return wav
 
 func build_audio() -> void:
+	AudioServer.set_bus_mute(0,false)
+	AudioServer.set_bus_volume_db(0,-2.0)
 	ambience = AudioStreamPlayer.new()
 	var birds := make_wav(1450,0.7)
 	birds.loop_mode = AudioStreamWAV.LOOP_FORWARD
 	ambience.stream = birds
-	ambience.volume_db = -22
+	ambience.volume_db = -36
 	add_child(ambience)
-	ambience.play()
+	# v0.2.6.1 uses AudioV026 for the main ambient bed.
+	ambience.stop()
 	engine = AudioStreamPlayer3D.new()
 	var eng := make_wav(95,1.2)
 	eng.loop_mode = AudioStreamWAV.LOOP_FORWARD
@@ -555,6 +634,10 @@ func _process(delta: float) -> void:
 	clock += delta
 	if audio_v026 != null and audio_v026.has_method("update_cues"):
 		audio_v026.call("update_cues",int(state),clock)
+	if audio_status != null and audio_status.visible:
+		audio_status_timer -= delta
+		if audio_status_timer <= 0.0:
+			audio_status.visible = false
 	if state == GameState.DRIVE:
 		var t: float = clampf(clock / 18.0, 0.0, 1.0)
 		car.position = drive_a.lerp(drive_b, smoothstep(0.0, 1.0, t))
@@ -754,8 +837,9 @@ func _physics_process(delta: float) -> void:
 		animate_walk_pose(body_visual,Time.get_ticks_msec()*0.012,0.75,true)
 		step_timer -= delta
 		if step_timer <= 0 and player.is_on_floor():
+			step_sound.pitch_scale = randf_range(0.92,1.06)
 			step_sound.play()
-			step_timer = 0.45
+			step_timer = 0.43
 	else:
 		animate_walk_pose(body_visual,0.0,0.0,true)
 		step_timer = 0
