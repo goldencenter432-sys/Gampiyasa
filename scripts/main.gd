@@ -6,6 +6,8 @@ const VisualsV022 = preload("res://scripts/visuals_v022.gd")
 const ContentV024 = preload("res://scripts/content_v024.gd")
 const EnvironmentV025 = preload("res://scripts/environment_v025.gd")
 const InteriorPolishV0252 = preload("res://scripts/interior_polish_v0252.gd")
+const RealismV026 = preload("res://scripts/realism_v026.gd")
+const AudioV026 = preload("res://scripts/audio_v026.gd")
 enum GameState { DRIVE, ARRIVAL, DIALOGUE, PLAY }
 
 var state := GameState.DRIVE
@@ -17,6 +19,8 @@ var visuals_v022: Node3D
 var content_v024: Node3D
 var scenery_v025: Node3D
 var interior_polish_v0252: Node3D
+var realism_v026: Node3D
+var audio_v026: Node
 var father: Node3D
 var mother: Node3D
 var daughter: Node3D
@@ -65,6 +69,10 @@ func _ready() -> void:
 	add_child(scenery_v025)
 	interior_polish_v0252 = InteriorPolishV0252.new()
 	add_child(interior_polish_v0252)
+	realism_v026 = RealismV026.new()
+	add_child(realism_v026)
+	audio_v026 = AudioV026.new()
+	add_child(audio_v026)
 	build_people_and_car()
 	build_player()
 	build_ui()
@@ -213,6 +221,10 @@ func person(parent: Node, p: Vector3, cloth: Color, scale_v := 1.0) -> Node3D:
 	parent.add_child(n)
 	cylinder(n,Vector3(0,1.15,0),0.38,1.45,cloth)
 	sphere(n,Vector3(0,2.1,0),0.34,Color("d3a07d"))
+	var hair: MeshInstance3D = sphere(n,Vector3(0,2.28,0.03),0.33,Color("2d241f"))
+	hair.scale = Vector3(1.0,0.48,1.0)
+	sphere(n,Vector3(-0.10,2.10,-0.31),0.032,Color("1f1d1c"))
+	sphere(n,Vector3(0.10,2.10,-0.31),0.032,Color("1f1d1c"))
 	cylinder(n,Vector3(-0.16,0.35,0),0.1,0.7,Color("383635"))
 	cylinder(n,Vector3(0.16,0.35,0),0.1,0.7,Color("383635"))
 	cylinder(n,Vector3(-0.48,1.18,0),0.09,0.82,Color("d3a07d"))
@@ -227,9 +239,12 @@ func build_child(parent: Node, p: Vector3, shirt: Color, scale_v: float = 1.0) -
 	# More natural child silhouette: torso, head, arms, shorts and separated legs.
 	box(n,Vector3(0,1.20,0),Vector3(0.72,0.95,0.42),shirt)
 	sphere(n,Vector3(0,1.95,0),0.31,Color("d3a07d"))
-	# Hair cap.
+	# Hair cap and simple facial hints.
 	var hair: MeshInstance3D = sphere(n,Vector3(0,2.12,0.02),0.30,Color("2b211c"))
 	hair.scale = Vector3(1.02,0.55,1.0)
+	sphere(n,Vector3(-0.10,1.99,-0.29),0.035,Color("1f1d1c"))
+	sphere(n,Vector3(0.10,1.99,-0.29),0.035,Color("1f1d1c"))
+	box(n,Vector3(0,1.86,-0.31),Vector3(0.18,0.035,0.025),Color("8f5c55"))
 	# Arms.
 	cylinder(n,Vector3(-0.46,1.18,0),0.09,0.82,Color("d3a07d"))
 	cylinder(n,Vector3(0.46,1.18,0),0.09,0.82,Color("d3a07d"))
@@ -311,6 +326,9 @@ func build_grandma(p: Vector3) -> Node3D:
 	cylinder(n,Vector3(0,1.05,0),0.42,1.35,Color("d7cbb1"))
 	box(n,Vector3(0,1.08,0.06),Vector3(0.92,1.15,0.20),Color("8e657f"))
 	sphere(n,Vector3(0,2.02,0),0.36,Color("c99a78"))
+	sphere(n,Vector3(-0.10,2.03,-0.33),0.032,Color("2a2420"))
+	sphere(n,Vector3(0.10,2.03,-0.33),0.032,Color("2a2420"))
+	box(n,Vector3(0,1.90,-0.34),Vector3(0.16,0.03,0.025),Color("8a5850"))
 	# Grey hair cap + bun.
 	sphere(n,Vector3(0,2.22,0.05),0.34,Color("c9c7c0"))
 	sphere(n,Vector3(0.0,2.23,0.34),0.20,Color("b7b5af"))
@@ -443,7 +461,7 @@ func build_ui() -> void:
 	objective.size = Vector2(585,36)
 	objective.add_theme_font_size_override("font_size",21)
 	objective.add_theme_color_override("font_color",Color("fff4df"))
-	objective.text = "ගමට යන ගමන්...  •  v0.2.5.4"
+	objective.text = "ගමට යන ගමන්...  •  v0.2.6"
 	layer.add_child(objective)
 
 	dialogue_panel = ColorRect.new()
@@ -535,6 +553,8 @@ func start_cutscene() -> void:
 
 func _process(delta: float) -> void:
 	clock += delta
+	if audio_v026 != null and audio_v026.has_method("update_cues"):
+		audio_v026.call("update_cues",int(state),clock)
 	if state == GameState.DRIVE:
 		var t: float = clampf(clock / 18.0, 0.0, 1.0)
 		car.position = drive_a.lerp(drive_b, smoothstep(0.0, 1.0, t))
@@ -575,6 +595,7 @@ func _process(delta: float) -> void:
 			engine.stop()
 			if visuals_v022 != null and visuals_v022.has_method("trigger_arrival_dust"):
 				visuals_v022.call("trigger_arrival_dust", car.global_position)
+				visuals_v022.call("trigger_arrival_dust", car.global_position + Vector3(-1.2,0,0.8))
 			objective.text = "ආච්චිලාගේ ගෙදරට ආවා"
 	elif state == GameState.ARRIVAL:
 		# Full family exit + grandma house-exit animation.
@@ -684,7 +705,7 @@ func _process(delta: float) -> void:
 			dialogue.text = "කොල්ලා: ආච්චි අම්මේ... මට බඩගිනියි..."
 		elif clock > 14.5:
 			dialogue.text = "ආච්චි: එන්න පුතේ. කෑමත් ලෑස්ති කරලා තියෙන්නෙ."
-		if clock > 18.0:
+		if clock > 17.0:
 			begin_play()
 	elif state == GameState.PLAY:
 		var look: Vector2 = controls.call("consume_look")
@@ -710,7 +731,7 @@ func begin_play() -> void:
 	jump_btn.visible = true
 	interact_btn.visible = true
 	skip_btn.visible = false
-	objective.text = "OBJECTIVE: ආච්චිලාගේ වලව්ව ඇතුළට යන්න"
+	objective.text = "MISSION 01: ආච්චිලාගේ වලව්ව ඇතුළට යන්න"
 
 func _physics_process(delta: float) -> void:
 	if state != GameState.PLAY:
@@ -739,9 +760,9 @@ func _physics_process(delta: float) -> void:
 		animate_walk_pose(body_visual,0.0,0.0,true)
 		step_timer = 0
 	if player.global_position.z > 24.6 and player.global_position.z <= 30.3:
-		objective.text = "OBJECTIVE: Main hall එක explore කරන්න"
+		objective.text = "MISSION 02: Main hall එක explore කරන්න"
 	elif player.global_position.z > 30.3:
-		objective.text = "OBJECTIVE: Rooms, photos සහ kitchen එක explore කරන්න"
+		objective.text = "MISSION 03: Rooms, photos සහ kitchen එක explore කරන්න"
 
 func show_timed_dialogue(text_value: String, seconds: float) -> void:
 	dialogue_panel.visible = true
